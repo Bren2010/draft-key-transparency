@@ -8,7 +8,7 @@ number:
 date:
 consensus: true
 v: 3
-area: SEC
+# area: SEC
 # workgroup: WG Working Group
 keyword:
  - end-to-end encryption
