@@ -1327,9 +1327,10 @@ guaranteed that the result they receive represents the same result that any
 other client searching for the same key would've seen. When a client updates a
 key, they're guaranteed that other clients will see the update the next time
 they search for the key.<a href="#section-3.3-1" class="pilcrow">¶</a></p>
-<p id="section-3.3-2">If the Transparency Log operator does not execute the protocol correctly, then either:<a href="#section-3.3-2" class="pilcrow">¶</a></p>
+<p id="section-3.3-2">If the Transparency Log operator does not execute the protocol correctly, then
+either:<a href="#section-3.3-2" class="pilcrow">¶</a></p>
 <ol start="1" type="1" class="normal type-1" id="section-3.3-3">
-<li id="section-3.3-3.1">The client will detect the error immediately and reject the protocol's output, or<a href="#section-3.3-3.1" class="pilcrow">¶</a>
+<li id="section-3.3-3.1">The client will detect the error immediately and reject the result, or<a href="#section-3.3-3.1" class="pilcrow">¶</a>
 </li>
           <li id="section-3.3-3.2">The client will permanently enter an invalid state.<a href="#section-3.3-3.2" class="pilcrow">¶</a>
 </li>
@@ -1338,13 +1339,13 @@ they search for the key.<a href="#section-3.3-1" class="pilcrow">¶</a></p>
 either be detected by background monitoring or the next time that out-of-band
 communication is available. Importantly, this means that clients must stay
 online for some fixed amount of time after entering an invalid state for it to
-be detected.<a href="#section-3.3-4" class="pilcrow">¶</a></p>
+be successfully detected.<a href="#section-3.3-4" class="pilcrow">¶</a></p>
 <p id="section-3.3-5">The exact caveats of the above guarantee depend naturally on the security of
 underlying cryptographic primitives, but also the operational mode that the
 Transparency Log relies on:<a href="#section-3.3-5" class="pilcrow">¶</a></p>
 <ul class="normal">
 <li class="normal" id="section-3.3-6.1">Contact Monitoring requires an assumption that the client that owns a key and
-all clients that look up a key do the required monitoring afterwards.<a href="#section-3.3-6.1" class="pilcrow">¶</a>
+all clients that look up the key do the required monitoring afterwards.<a href="#section-3.3-6.1" class="pilcrow">¶</a>
 </li>
           <li class="normal" id="section-3.3-6.2">Third-Party Management and Third-Party Auditing require an assumption that the
 Transparency Log operator and the third-party manager/auditor do not collude

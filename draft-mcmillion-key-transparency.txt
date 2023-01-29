@@ -212,7 +212,7 @@ Table of Contents
    correctly, then either:
 
    1.  The client will detect the error immediately and reject the
-       protocol's output, or
+       result, or
 
    2.  The client will permanently enter an invalid state.
 
@@ -220,14 +220,15 @@ Table of Contents
    state, it will either be detected by background monitoring or the
    next time that out-of-band communication is available.  Importantly,
    this means that clients must stay online for some fixed amount of
-   time after entering an invalid state for it to be detected.
+   time after entering an invalid state for it to be successfully
+   detected.
 
    The exact caveats of the above guarantee depend naturally on the
    security of underlying cryptographic primitives, but also the
    operational mode that the Transparency Log relies on:
 
    *  Contact Monitoring requires an assumption that the client that
-      owns a key and all clients that look up a key do the required
+      owns a key and all clients that look up the key do the required
       monitoring afterwards.
 
    *  Third-Party Management and Third-Party Auditing require an
