@@ -1,6 +1,6 @@
-# The Key Transparency (KT) Protocol
+# Key Transparency
 
-This is the working area for the individual Internet-Draft, "The Key Transparency (KT) Protocol".
+This is the working area for the individual Internet-Draft, "Key Transparency".
 
 * [Editor's Copy](https://Bren2010.github.io/draft-key-transparency/#go.draft-mcmillion-key-transparency.html)
 * [Datatracker Page](https://datatracker.ietf.org/doc/draft-mcmillion-key-transparency)
