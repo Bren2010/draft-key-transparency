@@ -157,30 +157,33 @@ shown all other clients. That is, when a client searches for a key, they're
 guaranteed that the result they receive represents the same result that any
 other client searching for the same key would've seen. When a client updates a
 key, they're guaranteed that other clients will see the update the next time
-they search for the key.
+they search for the key. <!-- subject to caching? -->
 
-If the Transparency Log operator does not execute the protocol correctly, then either:
+If the Transparency Log operator does not execute the protocol correctly, then
+either:
 
-1. The client will detect the error immediately and reject the protocol's output, or
+1. The client will detect the error immediately and reject the result, or
 2. The client will permanently enter an invalid state.
 
 Depending on the exact reason that the client enters an invalid state, it will
 either be detected by background monitoring or the next time that out-of-band
 communication is available. Importantly, this means that clients must stay
 online for some fixed amount of time after entering an invalid state for it to
-be detected.
+be successfully detected. <!-- need oob communication with someone not attacked? -->
 
 The exact caveats of the above guarantee depend naturally on the security of
 underlying cryptographic primitives, but also the operational mode that the
 Transparency Log relies on:
 
 - Contact Monitoring requires an assumption that the client that owns a key and
-  all clients that look up a key do the required monitoring afterwards.
+  all clients that look up the key do the required monitoring afterwards.
 - Third-Party Management and Third-Party Auditing require an assumption that the
   Transparency Log operator and the third-party manager/auditor do not collude
   to trick clients into accepting malicious changes.
+  <!-- write down why collusion-resistant KT is better than just having two operators stay in sync? -->
 
 <!-- TODO: Once the whole protocol is written, ensure this is as precise as possible. -->
+<!-- TODO: In Security Considerations, calculate how long you need to stay online for Contact Monitoring to detect an attack -->
 
 
 # Security Considerations
