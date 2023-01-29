@@ -129,11 +129,59 @@ Transparency Log operator), or communicate with the Transparency Log
 anonymously. However, later sections will give guidance on how these channels
 can be utilized effectively when/if they're available.
 
-## Protocols
-
 ## Operational Modes
 
+## Protocols
+
+The protocols that can be executed by a client are as follows:
+
+1. **Search:** Looks up a specific key in the most recent version of the log.
+   Clients may request either a specific version of the key, or the most recent
+   version available. If the key/version exists, the server returns the
+   corresponding value and a proof of inclusion. If the key/version does
+   not exist, the server returns a proof of non-inclusion instead.
+2. **Update:** Adds a new key-value pair to the log and returns a proof of
+   inclusion. Note that this means insertions are completed immediately and are
+   not subject to a delay.
+3. **Monitor:** While Search and Update are run by the client as-needed,
+   monitoring is done in the background on a recurring basis. It both checks
+   that the log is continuing to behave honestly, and that no changes have been
+   made to keys owned by the client without the client's knowledge.
+
 ## Security Guarantees
+
+A client that executes a protocol correctly (and does any required monitoring)
+receives a guarantee that the Transparency Log operator also executed the
+protocol correctly and in a way that's globally consistent with what it has
+shown all other clients. That is, when a client searches for a key, they're
+guaranteed that the result they receive represents the same result that any
+other client searching for the same key would've seen. When a client updates a
+key, they're guaranteed that other clients will see the update the next time
+they search for the key.
+
+If the Transparency Log operator does not execute the protocol correctly, then either:
+
+1. The client will detect the error immediately and reject the protocol's output, or
+2. The client will permanently enter an invalid state.
+
+Depending on the exact reason that the client enters an invalid state, it will
+either be detected by background monitoring or the next time that out-of-band
+communication is available. Importantly, this means that clients must stay
+online for some fixed amount of time after entering an invalid state for it to
+be detected.
+
+The exact caveats of the above guarantee depend naturally on the security of
+underlying cryptographic primitives, but also the operational mode that the
+Transparency Log relies on:
+
+- Contact Monitoring requires an assumption that the client that owns a key and
+  all clients that look up a key do the required monitoring afterwards.
+- Third-Party Management and Third-Party Auditing require an assumption that the
+  Transparency Log operator and the third-party manager/auditor do not collude
+  to trick clients into accepting malicious changes.
+
+<!-- TODO: Once the whole protocol is written, ensure this is as precise as possible. -->
+
 
 # Security Considerations
 
