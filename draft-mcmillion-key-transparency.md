@@ -91,7 +91,7 @@ to see them.
 {::boilerplate bcp14-tagged}
 
 
-# System Model
+# Protocol Overview
 
 From a networking perspective, the protocol in this document follows a
 client-server architecture with a central *Transparency Log*, acting as a
@@ -131,7 +131,7 @@ can be utilized effectively when/if they're available.
 
 ## Operational Modes
 
-## Protocols
+## Basic Protocols
 
 The protocols that can be executed by a client are as follows:
 
