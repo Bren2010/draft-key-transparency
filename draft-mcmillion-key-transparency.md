@@ -192,8 +192,8 @@ Transparency Log relies on:
 KT relies on two combined hash tree structures: log trees and prefix trees. This
 section describes the operation of both types of trees at a high-level and the
 way that they're combined. More precise algorithms for computing the
-intermediate and root values of the trees will be given in a later section. <!--
-TODO: Link later section -->
+intermediate and root values of the trees will be given in a later section.
+<!-- TODO: Link later section -->
 
 All types of trees consist of *nodes* which have a byte string as their *value*.
 A node is either a *leaf* if it has no children, or a *parent* if it has either
@@ -205,10 +205,10 @@ The *descendants* of a node are that node, its children, and the descendants of
 its children. A *subtree* of a tree is the tree given by the descendants of any
 node, called the *head* of the subtree.
 
-<!-- The *direct path* of a root node is the empty list, and of any other node is the
+The *direct path* of a root node is the empty list, and of any other node is the
 concatenation of that node's parent along with the parent's direct path. The
 *copath* of a node is the node's sibling concatenated with the list of siblings
-of all the nodes in its direct path, excluding the root. -->
+of all the nodes in its direct path, excluding the root.
 
 ## Log Tree
 
@@ -230,6 +230,18 @@ left-balanced binary tree with `n+1` leaves.
 
 While the value of a leaf is arbitrary, the value of a parent node is always the
 hash of the combined values of its left and right children.
+
+Log trees are special in that they can provide both *inclusion proofs*, which
+demonstrate that a leaf is included in a given tree, and *consistency proofs*,
+which demonstrate that a new version of a log is an extension of a past version
+of the log.
+
+An inclusion proof is given by providing the copath values of a leaf. The proof
+is verified by hashing together the leaf with the copath values and checking
+that the result equals the root value of the log. Consistency proofs are a more
+general version of the same idea. With a consistency proof, the prover provides
+the minimum set of intermediate node values from the current tree that allows
+the verifier to compute both the old root value and the current root value.
 
 ## Prefix Tree
 
@@ -264,7 +276,23 @@ The value of a leaf node is the encoded key-value pair, while the value of a
 parent node is the hash of the combined values of its left and right children
 (or a stand-in value when one of the children doesn't exist).
 
-## Combined Construction
+## Combined Tree
+
+Log trees are desirable because they can provide efficient consistency proofs to
+ensure verifiers that nothing has been removed from a log that was present in a
+previous version. However, log trees can't be efficiently searched without
+downloading the entire log. Prefix trees are extremely efficient to search, and
+can provide inclusion proofs to convince verifiers that the returned search
+results are correct. However, it's not possible to efficiently prove that a new
+version of a prefix tree contains the same data as a previous version (with only
+new keys added).
+
+In the combined tree structure, a log tree maintains a record of updates to
+key-value pairs while a prefix tree maintains a map from each key to the number
+of times it's been updated. Importantly, the root value of the prefix tree after
+applying a given update is then stored in the log tree alongside the record of
+the update. With some caveats, this combined structure supports both efficient
+consistency proofs and can be efficiently searched.
 
 
 # Security Considerations
