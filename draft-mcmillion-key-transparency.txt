@@ -3,9 +3,9 @@
 
 
 KT Working Group                                            B. McMillion
-Internet-Draft                                           29 January 2023
+Internet-Draft                                           30 January 2023
 Intended status: Informational                                          
-Expires: 2 August 2023
+Expires: 3 August 2023
 
 
                             Key Transparency
@@ -46,7 +46,7 @@ Status of This Memo
    time.  It is inappropriate to use Internet-Drafts as reference
    material or to cite them other than as "work in progress."
 
-   This Internet-Draft will expire on 2 August 2023.
+   This Internet-Draft will expire on 3 August 2023.
 
 Copyright Notice
 
@@ -70,11 +70,15 @@ Table of Contents
      3.1.  Operational Modes
      3.2.  Basic Protocols
      3.3.  Security Guarantees
-   4.  Security Considerations
-   5.  IANA Considerations
-   6.  References
-     6.1.  Normative References
-     6.2.  Informative References
+   4.  Tree Construction
+     4.1.  Log Tree
+     4.2.  Prefix Tree
+     4.3.  Combined Tree
+   5.  Security Considerations
+   6.  IANA Considerations
+   7.  References
+     7.1.  Normative References
+     7.2.  Informative References
    Acknowledgments
    Author's Address
 
@@ -114,13 +118,13 @@ Table of Contents
    permanent and imminently detectable by any out-of-band communication.
 
    The critical improvement of KT over related protocols like
-   Certificate Transparency [RFC6962] is that KT includes an efficient
-   protocol to search the log for entries related to a specific
-   participant.  This means that users don't need to download the entire
-   log, which may be substantial, to find all entries that are relevant
-   to them.  It also means that KT can better preserve user privacy by
-   only showing entries of the log to participants that genuinely need
-   to see them.
+   Certificate Transparency [I-D.ietf-trans-rfc6962-bis] is that KT
+   includes an efficient protocol to search the log for entries related
+   to a specific participant.  This means that users don't need to
+   download the entire log, which may be substantial, to find all
+   entries that are relevant to them.  It also means that KT can better
+   preserve user privacy by only showing entries of the log to
+   participants that genuinely need to see them.
 
 2.  Conventions and Definitions
 
@@ -132,15 +136,15 @@ Table of Contents
 
 3.  Protocol Overview
 
-   From a networking perspective, the protocol in this document follows
-   a client-server architecture with a central _Transparency Log_,
-   acting as a server, which holds the authoritative copy of all
-   information and exposes endpoints that allow clients to query or
-   modify stored data.  Clients coordinate with each other through the
-   server by uploading their own public keys and downloading the public
-   keys of other clients.  Clients are expected to maintain relatively
-   little state, limited only to what is required to interact with the
-   log and ensure that it is behaving honestly.
+   From a networking perspective, KT follows a client-server
+   architecture with a central _Transparency Log_, acting as a server,
+   which holds the authoritative copy of all information and exposes
+   endpoints that allow clients to query or modify stored data.  Clients
+   coordinate with each other through the server by uploading their own
+   public keys and downloading the public keys of other clients.
+   Clients are expected to maintain relatively little state, limited
+   only to what is required to interact with the log and ensure that it
+   is behaving honestly.
 
    From an application perspective, KT works as a versioned key-value
    database.  Clients insert key-value pairs into the database where,
@@ -152,8 +156,8 @@ Table of Contents
    specified if otherwise.
 
    Note that while this document provides specific protocol messages and
-   the way that those messages should be encoded, it does not require
-   the use of a specific transport protocol.  This is intended to allow
+   the way that those messages would be encoded, it does not require the
+   use of a specific transport protocol.  This is intended to allow
    applications to layer KT on top of whatever transport protocol their
    application already uses.  In particular, this allows applications to
    continue relying on their existing access control system.
@@ -175,6 +179,8 @@ Table of Contents
 
 3.1.  Operational Modes
 
+   TODO
+
 3.2.  Basic Protocols
 
    The protocols that can be executed by a client are as follows:
@@ -193,20 +199,20 @@ Table of Contents
    3.  *Monitor:* While Search and Update are run by the client as-
        needed, monitoring is done in the background on a recurring
        basis.  It both checks that the log is continuing to behave
-       honestly, and that no changes have been made to keys owned by the
+       honestly and that no changes have been made to keys owned by the
        client without the client's knowledge.
 
 3.3.  Security Guarantees
 
-   A client that executes a protocol correctly (and does any required
-   monitoring) receives a guarantee that the Transparency Log operator
-   also executed the protocol correctly and in a way that's globally
-   consistent with what it has shown all other clients.  That is, when a
-   client searches for a key, they're guaranteed that the result they
-   receive represents the same result that any other client searching
-   for the same key would've seen.  When a client updates a key, they're
-   guaranteed that other clients will see the update the next time they
-   search for the key.
+   A client that executes a Search or Update protocol correctly (and
+   does any required monitoring afterwards) receives a guarantee that
+   the Transparency Log operator also executed the protocol correctly
+   and in a way that's globally consistent with what it has shown all
+   other clients.  That is, when a client searches for a key, they're
+   guaranteed that the result they receive represents the same result
+   that any other client searching for the same key would've seen.  When
+   a client updates a key, they're guaranteed that other clients will
+   see the update the next time they search for the key.
 
    If the Transparency Log operator does not execute the protocol
    correctly, then either:
@@ -236,17 +242,137 @@ Table of Contents
       manager/auditor do not collude to trick clients into accepting
       malicious changes.
 
-4.  Security Considerations
+4.  Tree Construction
+
+   KT relies on two combined hash tree structures: log trees and prefix
+   trees.  This section describes the operation of both types of trees
+   at a high-level and the way that they're combined.  More precise
+   algorithms for computing the intermediate and root values of the
+   trees will be given in a later section.
+
+   All types of trees consist of _nodes_ which have a byte string as
+   their _value_. A node is either a _leaf_ if it has no children, or a
+   _parent_ if it has either a _left child_ or a _right child_. A node
+   is the _root_ of a tree if it has no parents, and an _intermediate_
+   if it has both children and parents.  Nodes are _siblings_ if they
+   share the same parent.
+
+   The _descendants_ of a node are that node, its children, and the
+   descendants of its children.  A _subtree_ of a tree is the tree given
+   by the descendants of any node, called the _head_ of the subtree.
+
+   The _direct path_ of a root node is the empty list, and of any other
+   node is the concatenation of that node's parent along with the
+   parent's direct path.  The _copath_ of a node is the node's sibling
+   concatenated with the list of siblings of all the nodes in its direct
+   path, excluding the root.
+
+4.1.  Log Tree
+
+   Log trees are used for storing information in the chronological order
+   that it was added and are constructed as _left-balanced_ binary
+   trees.
+
+   A binary tree is _balanced_ if its size is a power of two and for any
+   parent node in the tree, its left and right subtrees have the same
+   size.  A binary tree is _left-balanced_ if for every parent, either
+   the parent is balanced, or the left subtree of that parent is the
+   largest balanced subtree that could be constructed from the leaves
+   present in the parent's own subtree.  Given a list of n items, there
+   is a unique left-balanced binary tree structure with these elements
+   as leaves.  Note also that in this tree, every parent always has both
+   a left and right child.
+
+   Log trees initially consist of a single leaf node.  New leaves are
+   added to the right-most edge of the tree along with a single parent
+   node, to construct the left-balanced binary tree with n+1 leaves.
+
+   While the value of a leaf is arbitrary, the value of a parent node is
+   always the hash of the combined values of its left and right
+   children.
+
+   Log trees are special in that they can provide both _inclusion
+   proofs_, which demonstrate that a leaf is included in a given tree,
+   and _consistency proofs_, which demonstrate that a new version of a
+   log is an extension of a past version of the log.
+
+   An inclusion proof is given by providing the copath values of a leaf.
+   The proof is verified by hashing together the leaf with the copath
+   values and checking that the result equals the root value of the log.
+   Consistency proofs are a more general version of the same idea.  With
+   a consistency proof, the prover provides the minimum set of
+   intermediate node values from the current tree that allows the
+   verifier to compute both the old root value and the current root
+   value.
+
+4.2.  Prefix Tree
+
+   Prefix trees are used for storing key-value pairs while preserving
+   the ability to efficiently look up a value by its corresponding key.
+
+   Each leaf node in a prefix tree contains the encoded data of a key-
+   value pair.  Each parent node represents some specific prefix which
+   all keys in the subtree headed by that node have in common.  The
+   subtree headed by a parent's left child contains all keys that share
+   its prefix followed by an additional 0 bit, while the subtree headed
+   by a parent's right child contains all keys that share its prefix
+   followed by an additional 1 bit.
+
+   The root node, in particular, represents the empty string as a
+   prefix.  The root's left child contains all keys that begin with a 0
+   bit, while the right child contains all keys that begin with a 1 bit.
+
+   A prefix tree can be searched by starting at the root node, and
+   moving to the left child if the first bit of a search key is 0, or
+   the right child if the first bit is 1.  This is then repeated for the
+   second bit, third bit, and so on until the search either terminates
+   at a leaf node (which may or may not be for the desired key), or a
+   parent node that lacks the desired child.
+
+   New key-value pairs are added to the tree by searching it according
+   to this process.  If the search terminates at a parent without a left
+   or right child, a new leaf is simply added as the parent's missing
+   child.  If the search terminates at a leaf for the wrong key, one or
+   more intermediate nodes are added until the new leaf and the old leaf
+   would no longer reside in the same place.  That is, until we reach
+   the first bit that differs between the new key and the old key.
+
+   The value of a leaf node is the encoded key-value pair, while the
+   value of a parent node is the hash of the combined values of its left
+   and right children (or a stand-in value when one of the children
+   doesn't exist).
+
+4.3.  Combined Tree
+
+   Log trees are desirable because they can provide efficient
+   consistency proofs to ensure verifiers that nothing has been removed
+   from a log that was present in a previous version.  However, log
+   trees can't be efficiently searched without downloading the entire
+   log.  Prefix trees are extremely efficient to search, and can provide
+   inclusion proofs to convince verifiers that the returned search
+   results are correct.  However, it's not possible to efficiently prove
+   that a new version of a prefix tree contains the same data as a
+   previous version (with only new keys added).
+
+   In the combined tree structure, a log tree maintains a record of
+   updates to key-value pairs while a prefix tree maintains a map from
+   each key to the number of times it's been updated.  Importantly, the
+   root value of the prefix tree after applying a given update is then
+   stored in the log tree alongside the record of the update.  With some
+   caveats, this combined structure supports both efficient consistency
+   proofs and can be efficiently searched.
+
+5.  Security Considerations
 
    TODO Security
 
-5.  IANA Considerations
+6.  IANA Considerations
 
    This document has no IANA actions.
 
-6.  References
+7.  References
 
-6.1.  Normative References
+7.1.  Normative References
 
    [RFC2119]  Bradner, S., "Key words for use in RFCs to Indicate
               Requirement Levels", BCP 14, RFC 2119,
@@ -257,11 +383,14 @@ Table of Contents
               2119 Key Words", BCP 14, RFC 8174, DOI 10.17487/RFC8174,
               May 2017, <https://www.rfc-editor.org/rfc/rfc8174>.
 
-6.2.  Informative References
+7.2.  Informative References
 
-   [RFC6962]  Laurie, B., Langley, A., and E. Kasper, "Certificate
-              Transparency", RFC Editor report, DOI 10.17487/rfc6962,
-              June 2013, <https://doi.org/10.17487/rfc6962>.
+   [I-D.ietf-trans-rfc6962-bis]
+              Laurie, B., Langley, A., Kasper, E., Messeri, E., and R.
+              Stradling, "Certificate Transparency Version 2.0", Work in
+              Progress, Internet-Draft, draft-ietf-trans-rfc6962-bis-42,
+              31 August 2021, <https://datatracker.ietf.org/doc/html/
+              draft-ietf-trans-rfc6962-bis-42>.
 
 Acknowledgments
 
