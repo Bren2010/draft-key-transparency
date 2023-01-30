@@ -29,7 +29,16 @@ author:
 normative:
 
 informative:
-
+  Merkle2:
+    target: https://eprint.iacr.org/2021/453
+    title: "Merkle^2: A Low-Latency Transparency Log System"
+    date: 2021-04-08
+    author:
+      - name: Yuncong Hu
+      - name: Kian Hooshmand
+      - name: Harika Kalidhindi
+      - name: Seung Jin Yang
+      - name: Raluca Ada Popa
 
 --- abstract
 
@@ -279,20 +288,20 @@ parent node is the hash of the combined values of its left and right children
 ## Combined Tree
 
 Log trees are desirable because they can provide efficient consistency proofs to
-ensure verifiers that nothing has been removed from a log that was present in a
+assure verifiers that nothing has been removed from a log that was present in a
 previous version. However, log trees can't be efficiently searched without
-downloading the entire log. Prefix trees are extremely efficient to search, and
+downloading the entire log. Prefix trees are extremely efficient to search and
 can provide inclusion proofs to convince verifiers that the returned search
 results are correct. However, it's not possible to efficiently prove that a new
-version of a prefix tree contains the same data as a previous version (with only
-new keys added).
+version of a prefix tree contains the same data as a previous version with only
+new keys added.
 
-In the combined tree structure, a log tree maintains a record of updates to
-key-value pairs while a prefix tree maintains a map from each key to the number
-of times it's been updated. Importantly, the root value of the prefix tree after
-applying a given update is then stored in the log tree alongside the record of
-the update. With some caveats, this combined structure supports both efficient
-consistency proofs and can be efficiently searched.
+In the combined tree structure based on {{Merkle2}}, a log tree maintains a
+record of updates to key-value pairs while a prefix tree maintains a map from
+each key to the number of times it's been updated. Importantly, the root value
+of the prefix tree after applying a given update is then stored in the log tree
+alongside the record of the update. With some caveats, this combined structure
+supports both efficient consistency proofs and can be efficiently searched.
 
 
 # Security Considerations
