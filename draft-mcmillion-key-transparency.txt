@@ -345,22 +345,23 @@ Table of Contents
 4.3.  Combined Tree
 
    Log trees are desirable because they can provide efficient
-   consistency proofs to ensure verifiers that nothing has been removed
+   consistency proofs to assure verifiers that nothing has been removed
    from a log that was present in a previous version.  However, log
    trees can't be efficiently searched without downloading the entire
-   log.  Prefix trees are extremely efficient to search, and can provide
+   log.  Prefix trees are extremely efficient to search and can provide
    inclusion proofs to convince verifiers that the returned search
    results are correct.  However, it's not possible to efficiently prove
    that a new version of a prefix tree contains the same data as a
-   previous version (with only new keys added).
+   previous version with only new keys added.
 
-   In the combined tree structure, a log tree maintains a record of
-   updates to key-value pairs while a prefix tree maintains a map from
-   each key to the number of times it's been updated.  Importantly, the
-   root value of the prefix tree after applying a given update is then
-   stored in the log tree alongside the record of the update.  With some
-   caveats, this combined structure supports both efficient consistency
-   proofs and can be efficiently searched.
+   In the combined tree structure based on [Merkle2], a log tree
+   maintains a record of updates to key-value pairs while a prefix tree
+   maintains a map from each key to the number of times it's been
+   updated.  Importantly, the root value of the prefix tree after
+   applying a given update is then stored in the log tree alongside the
+   record of the update.  With some caveats, this combined structure
+   supports both efficient consistency proofs and can be efficiently
+   searched.
 
 5.  Security Considerations
 
@@ -391,6 +392,10 @@ Table of Contents
               Progress, Internet-Draft, draft-ietf-trans-rfc6962-bis-42,
               31 August 2021, <https://datatracker.ietf.org/doc/html/
               draft-ietf-trans-rfc6962-bis-42>.
+
+   [Merkle2]  Hu, Y., Hooshmand, K., Kalidhindi, H., Yang, S. J., and R.
+              A. Popa, "Merkle^2: A Low-Latency Transparency Log
+              System", 8 April 2021, <https://eprint.iacr.org/2021/453>.
 
 Acknowledgments
 
