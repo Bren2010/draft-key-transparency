@@ -348,19 +348,45 @@ necessary for the efficient auditing of a Transparency Log.
 
 # Ciphersuites
 
+Each Transparency Log uses a single ciphersuite, chosen when the log is
+initially created, that specifies the following primitives to be used for
+cryptographic computations:
+
+* A hash algorithm
+* A signature algorithm
+* A Verifiable Random Function (VRF) algorithm
+
+The hash algorithm is used for computing the intermediate and root values of
+hash trees. The signature algorithm is used for signatures from both the service
+operator and the third-party, if one is present. The VRF is used for preserving
+the privacy of lookup keys. One of the VRF algorithms from {{!I-D.irtf-cfrg-vrf}} must be used.
+
+Ciphersuites are represented with the CipherSuite type. The ciphersuites are
+defined in {{kt-ciphersuites}}.
+
 # Cryptographic Computations
+
 ## Log Tree
+
 ## Prefix Tree
+
 ## Commitment
+
 ## Tree Head Signature
 
 # User Operations
+
 ## Search
+
 ## Update
+
 ## Monitor
 
+
 # Third-party Protocols
+
 ## Management
+
 ## Auditing
 
 # Out-of-Band Communication
@@ -372,7 +398,24 @@ TODO Security
 
 # IANA Considerations
 
-This document has no IANA actions.
+This document requests the creation of the following new IANA registries:
+
+* KT Ciphersuites ({{kt-ciphersuites}})
+
+All of these registries should be under a heading of "Key Transparency",
+and assignments are made via the Specification Required policy {{!RFC8126}}. See
+{{de}} for additional information about the KT Designated Experts (DEs).
+
+RFC EDITOR: Please replace XXXX throughout with the RFC number assigned to
+this document
+
+## KT Ciphersuites
+
+TODO
+
+## KT Designated Expert Pool {#de}
+
+TODO
 
 
 --- back
