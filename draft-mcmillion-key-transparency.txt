@@ -74,11 +74,28 @@ Table of Contents
      4.1.  Log Tree
      4.2.  Prefix Tree
      4.3.  Combined Tree
-   5.  Security Considerations
-   6.  IANA Considerations
-   7.  References
-     7.1.  Normative References
-     7.2.  Informative References
+   5.  Preserving Privacy
+   6.  Ciphersuites
+   7.  Cryptographic Computations
+     7.1.  Log Tree
+     7.2.  Prefix Tree
+     7.3.  Commitment
+     7.4.  Tree Head Signature
+   8.  User Operations
+     8.1.  Search
+     8.2.  Update
+     8.3.  Monitor
+   9.  Third-party Protocols
+     9.1.  Management
+     9.2.  Auditing
+   10. Out-of-Band Communication
+   11. Security Considerations
+   12. IANA Considerations
+     12.1.  KT Ciphersuites
+     12.2.  KT Designated Expert Pool
+   13. References
+     13.1.  Normative References
+     13.2.  Informative References
    Acknowledgments
    Author's Address
 
@@ -408,28 +425,108 @@ Table of Contents
    when searching for the same key, which is necessary for the efficient
    auditing of a Transparency Log.
 
-5.  Security Considerations
+5.  Preserving Privacy
+
+6.  Ciphersuites
+
+   Each Transparency Log uses a single ciphersuite, chosen when the log
+   is initially created, that specifies the following primitives to be
+   used for cryptographic computations:
+
+   *  A hash algorithm
+
+   *  A signature algorithm
+
+   *  A Verifiable Random Function (VRF) algorithm
+
+   The hash algorithm is used for computing the intermediate and root
+   values of hash trees.  The signature algorithm is used for signatures
+   from both the service operator and the third-party, if one is
+   present.  The VRF is used for preserving the privacy of lookup keys.
+   One of the VRF algorithms from [I-D.irtf-cfrg-vrf] must be used.
+
+   Ciphersuites are represented with the CipherSuite type.  The
+   ciphersuites are defined in Section 12.1.
+
+7.  Cryptographic Computations
+
+7.1.  Log Tree
+
+7.2.  Prefix Tree
+
+7.3.  Commitment
+
+7.4.  Tree Head Signature
+
+8.  User Operations
+
+8.1.  Search
+
+8.2.  Update
+
+8.3.  Monitor
+
+9.  Third-party Protocols
+
+9.1.  Management
+
+9.2.  Auditing
+
+10.  Out-of-Band Communication
+
+11.  Security Considerations
 
    TODO Security
 
-6.  IANA Considerations
+12.  IANA Considerations
 
-   This document has no IANA actions.
+   This document requests the creation of the following new IANA
+   registries:
 
-7.  References
+   *  KT Ciphersuites (Section 12.1)
 
-7.1.  Normative References
+   All of these registries should be under a heading of "Key
+   Transparency", and assignments are made via the Specification
+   Required policy [RFC8126].  See Section 12.2 for additional
+   information about the KT Designated Experts (DEs).
+
+   RFC EDITOR: Please replace XXXX throughout with the RFC number
+   assigned to this document
+
+12.1.  KT Ciphersuites
+
+   TODO
+
+12.2.  KT Designated Expert Pool
+
+   TODO
+
+13.  References
+
+13.1.  Normative References
+
+   [I-D.irtf-cfrg-vrf]
+              Goldberg, S., Reyzin, L., Papadopoulos, D., and J. Včelák,
+              "Verifiable Random Functions (VRFs)", Work in Progress,
+              Internet-Draft, draft-irtf-cfrg-vrf-15, 9 August 2022,
+              <https://datatracker.ietf.org/doc/html/draft-irtf-cfrg-
+              vrf-15>.
 
    [RFC2119]  Bradner, S., "Key words for use in RFCs to Indicate
               Requirement Levels", BCP 14, RFC 2119,
               DOI 10.17487/RFC2119, March 1997,
               <https://www.rfc-editor.org/rfc/rfc2119>.
 
+   [RFC8126]  Cotton, M., Leiba, B., and T. Narten, "Guidelines for
+              Writing an IANA Considerations Section in RFCs", BCP 26,
+              RFC 8126, DOI 10.17487/RFC8126, June 2017,
+              <https://www.rfc-editor.org/rfc/rfc8126>.
+
    [RFC8174]  Leiba, B., "Ambiguity of Uppercase vs Lowercase in RFC
               2119 Key Words", BCP 14, RFC 8174, DOI 10.17487/RFC8174,
               May 2017, <https://www.rfc-editor.org/rfc/rfc8174>.
 
-7.2.  Informative References
+13.2.  Informative References
 
    [I-D.ietf-trans-rfc6962-bis]
               Laurie, B., Langley, A., Kasper, E., Messeri, E., and R.
