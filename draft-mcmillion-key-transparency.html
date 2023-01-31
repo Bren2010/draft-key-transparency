@@ -9,20 +9,20 @@
 <meta content="
        While there are several established protocols for end-to-end encryption,
 relatively little attention has been given to securely distributing the end-user
-public keys for encryption. As such, encryption protocols are often still
+public keys for such encryption. As a result, these protocols are often still
 vulnerable to eavesdropping by active attackers. Key Transparency is a protocol
 for distributing sensitive cryptographic information, such as public keys, in a
 way that reliably either prevents interference or detects that it occured in a
-timely manner. More generally though, it can also be applied to ensure that a
-group of users agree on a shared value or to keep tamper-evident logs of
-security-critical events. 
+timely manner. In addition to distributing public keys, it can also be applied
+to ensure that a group of users agree on a shared value or to keep
+tamper-evident logs of security-critical events. 
     " name="description">
-<meta content="xml2rfc 3.15.3" name="generator">
+<meta content="xml2rfc 3.16.0" name="generator">
 <meta content="end-to-end encryption" name="keyword">
 <meta content="append-only log" name="keyword">
 <meta content="draft-mcmillion-key-transparency-latest" name="ietf.draft">
 <!-- Generator version information:
-  xml2rfc 3.15.3
+  xml2rfc 3.16.0
     Python 3.10.9
     appdirs 1.4.4
     ConfigArgParse 1.5.3
@@ -1050,7 +1050,7 @@ svg :is([fill="white"], [fill^="#fff"]) {
 </tr></thead>
 <tfoot><tr>
 <td class="left">McMillion</td>
-<td class="center">Expires 3 August 2023</td>
+<td class="center">Expires 4 August 2023</td>
 <td class="right">[Page]</td>
 </tr></tfoot>
 </table>
@@ -1063,12 +1063,12 @@ svg :is([fill="white"], [fill^="#fff"]) {
 <dd class="internet-draft">draft-mcmillion-key-transparency-latest</dd>
 <dt class="label-published">Published:</dt>
 <dd class="published">
-<time datetime="2023-01-30" class="published">30 January 2023</time>
+<time datetime="2023-01-31" class="published">31 January 2023</time>
     </dd>
 <dt class="label-intended-status">Intended Status:</dt>
 <dd class="intended-status">Informational</dd>
 <dt class="label-expires">Expires:</dt>
-<dd class="expires"><time datetime="2023-08-03">3 August 2023</time></dd>
+<dd class="expires"><time datetime="2023-08-04">4 August 2023</time></dd>
 <dt class="label-authors">Author:</dt>
 <dd class="authors">
 <div class="author">
@@ -1082,13 +1082,13 @@ svg :is([fill="white"], [fill^="#fff"]) {
       <h2 id="abstract"><a href="#abstract" class="selfRef">Abstract</a></h2>
 <p id="section-abstract-1">While there are several established protocols for end-to-end encryption,
 relatively little attention has been given to securely distributing the end-user
-public keys for encryption. As such, encryption protocols are often still
+public keys for such encryption. As a result, these protocols are often still
 vulnerable to eavesdropping by active attackers. Key Transparency is a protocol
 for distributing sensitive cryptographic information, such as public keys, in a
 way that reliably either prevents interference or detects that it occured in a
-timely manner. More generally though, it can also be applied to ensure that a
-group of users agree on a shared value or to keep tamper-evident logs of
-security-critical events.<a href="#section-abstract-1" class="pilcrow">¶</a></p>
+timely manner. In addition to distributing public keys, it can also be applied
+to ensure that a group of users agree on a shared value or to keep
+tamper-evident logs of security-critical events.<a href="#section-abstract-1" class="pilcrow">¶</a></p>
 </section>
 <section class="note rfcEditorRemove" id="section-note.1">
       <h2 id="name-discussion-venues">
@@ -1117,7 +1117,7 @@ security-critical events.<a href="#section-abstract-1" class="pilcrow">¶</a></p
         time. It is inappropriate to use Internet-Drafts as reference
         material or to cite them other than as "work in progress."<a href="#section-boilerplate.1-3" class="pilcrow">¶</a></p>
 <p id="section-boilerplate.1-4">
-        This Internet-Draft will expire on 3 August 2023.<a href="#section-boilerplate.1-4" class="pilcrow">¶</a></p>
+        This Internet-Draft will expire on 4 August 2023.<a href="#section-boilerplate.1-4" class="pilcrow">¶</a></p>
 </section>
 </div>
 <div id="copyright">
@@ -1156,10 +1156,10 @@ security-critical events.<a href="#section-abstract-1" class="pilcrow">¶</a></p
             <p id="section-toc.1-1.3.1"><a href="#section-3" class="auto internal xref">3</a>.  <a href="#name-protocol-overview" class="internal xref">Protocol Overview</a></p>
 <ul class="compact toc ulBare ulEmpty">
 <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3.2.1">
-                <p id="section-toc.1-1.3.2.1.1" class="keepWithNext"><a href="#section-3.1" class="auto internal xref">3.1</a>.  <a href="#name-operational-modes" class="internal xref">Operational Modes</a></p>
+                <p id="section-toc.1-1.3.2.1.1" class="keepWithNext"><a href="#section-3.1" class="auto internal xref">3.1</a>.  <a href="#name-basic-operations" class="internal xref">Basic Operations</a></p>
 </li>
               <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3.2.2">
-                <p id="section-toc.1-1.3.2.2.1"><a href="#section-3.2" class="auto internal xref">3.2</a>.  <a href="#name-basic-protocols" class="internal xref">Basic Protocols</a></p>
+                <p id="section-toc.1-1.3.2.2.1"><a href="#section-3.2" class="auto internal xref">3.2</a>.  <a href="#name-deployment-modes" class="internal xref">Deployment Modes</a></p>
 </li>
               <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3.2.3">
                 <p id="section-toc.1-1.3.2.3.1"><a href="#section-3.3" class="auto internal xref">3.3</a>.  <a href="#name-security-guarantees" class="internal xref">Security Guarantees</a></p>
@@ -1217,33 +1217,32 @@ things must happen. First, participants in the system must provide any public
 keys they intend to use for encryption to the service operator. Second, these
 public keys must be somehow distributed to any participants that will rely on
 them for decryption.<a href="#section-1-1" class="pilcrow">¶</a></p>
-<p id="section-1-2">Typically this is done simply by having users upload their public keys to a
-directory and allowing other users to download from the directory as-needed.
-With this approach, the service operator is trusted not to manipulate the
-directory by inserting malicious public keys. As such, any encryption protocol
-can really only protect users against passive eavesdropping on their messages.<a href="#section-1-2" class="pilcrow">¶</a></p>
+<p id="section-1-2">Typically this is done by having users upload their public keys to a simple
+directory where other users can download them as necessary. With this approach,
+the service operator is trusted not to manipulate the directory by inserting
+malicious public keys, which means the underlying encryption protocol can only
+protect users against passive eavesdropping on their messages.<a href="#section-1-2" class="pilcrow">¶</a></p>
 <p id="section-1-3">However most messaging systems are designed such that all messages exchanged
-flow through the service operator's servers, which means that it's extremely
-easy for an operator to launch an active attack. That is, the service operator
-can insert public keys into the directory that they know the private key for,
-attach those public keys to a user's account without the user's knowledge, and
-then inject these keys into active conversations with that user to receive
-plaintext data.<a href="#section-1-3" class="pilcrow">¶</a></p>
+flow through the service operator's servers, so it's extremely easy for an
+operator to launch an active attack. That is, the service operator can insert
+public keys into the directory that they know the private key for, attach those
+public keys to a user's account without the user's knowledge, and then inject
+these keys into active conversations with that user to receive plaintext data.<a href="#section-1-3" class="pilcrow">¶</a></p>
 <p id="section-1-4">Key Transparency (KT) solves this problem by requiring the service operator to
 store user public keys in a cryptographically-protected append-only log. Any
 malicious entries added to such a log will generally be equally visible to all
 users, in which case a user can trivially detect that they're being impersonated
 by viewing the public keys attached to their account. However, if the service
 operator attempts to conceal some entries of the log from some users but not
-others, this creates a "forked view" of the log which is permanent and
-imminently detectable by any out-of-band communication.<a href="#section-1-4" class="pilcrow">¶</a></p>
+others, this creates a "forked view" of the log which is permanent and easily
+detectable with out-of-band communication.<a href="#section-1-4" class="pilcrow">¶</a></p>
 <p id="section-1-5">The critical improvement of KT over related protocols like Certificate
 Transparency  <span>[<a href="#I-D.ietf-trans-rfc6962-bis" class="cite xref">I-D.ietf-trans-rfc6962-bis</a>]</span> is that KT includes an efficient
 protocol to search the log for entries related to a specific participant. This
-means that users don't need to download the entire log, which may be
-substantial, to find all entries that are relevant to them. It also means that
-KT can better preserve user privacy by only showing entries of the log to
-participants that genuinely need to see them.<a href="#section-1-5" class="pilcrow">¶</a></p>
+means users don't need to download the entire log, which may be substantial, to
+find all entries that are relevant to them. It also means that KT can better
+preserve user privacy by only showing entries of the log to participants that
+genuinely need to see them.<a href="#section-1-5" class="pilcrow">¶</a></p>
 </section>
 </div>
 <div id="conventions-and-definitions">
@@ -1292,41 +1291,71 @@ reason for rejection, is left to the application.<a href="#section-3-4" class="p
 with each other out-of-band (that is, away from any interference by the
 Transparency Log operator), or communicate with the Transparency Log
 anonymously. However, later sections will give guidance on how these channels
-can be utilized effectively when/if they're available.<a href="#section-3-5" class="pilcrow">¶</a></p>
-<div id="operational-modes">
+can be utilized effectively when or if they're available.<a href="#section-3-5" class="pilcrow">¶</a></p>
+<div id="basic-operations">
 <section id="section-3.1">
-        <h3 id="name-operational-modes">
-<a href="#section-3.1" class="section-number selfRef">3.1. </a><a href="#name-operational-modes" class="section-name selfRef">Operational Modes</a>
+        <h3 id="name-basic-operations">
+<a href="#section-3.1" class="section-number selfRef">3.1. </a><a href="#name-basic-operations" class="section-name selfRef">Basic Operations</a>
         </h3>
-<p id="section-3.1-1">TODO<a href="#section-3.1-1" class="pilcrow">¶</a></p>
-</section>
-</div>
-<div id="basic-protocols">
-<section id="section-3.2">
-        <h3 id="name-basic-protocols">
-<a href="#section-3.2" class="section-number selfRef">3.2. </a><a href="#name-basic-protocols" class="section-name selfRef">Basic Protocols</a>
-        </h3>
-<p id="section-3.2-1">The protocols that can be executed by a client are as follows:<a href="#section-3.2-1" class="pilcrow">¶</a></p>
-<ol start="1" type="1" class="normal type-1" id="section-3.2-2">
-<li id="section-3.2-2.1">
+<p id="section-3.1-1">The operations that can be executed by a client are as follows:<a href="#section-3.1-1" class="pilcrow">¶</a></p>
+<ol start="1" type="1" class="normal type-1" id="section-3.1-2">
+<li id="section-3.1-2.1">
             <strong>Search:</strong> Looks up a specific key in the most recent version of the log.
 Clients may request either a specific version of the key, or the most recent
 version available. If the key/version exists, the server returns the
 corresponding value and a proof of inclusion. If the key/version does
-not exist, the server returns a proof of non-inclusion instead.<a href="#section-3.2-2.1" class="pilcrow">¶</a>
+not exist, the server returns a proof of non-inclusion instead.<a href="#section-3.1-2.1" class="pilcrow">¶</a>
 </li>
-          <li id="section-3.2-2.2">
+          <li id="section-3.1-2.2">
             <strong>Update:</strong> Adds a new key-value pair to the log and returns a proof of
 inclusion. Note that this means insertions are completed immediately and are
-not subject to a delay.<a href="#section-3.2-2.2" class="pilcrow">¶</a>
+not subject to a delay.<a href="#section-3.1-2.2" class="pilcrow">¶</a>
 </li>
-          <li id="section-3.2-2.3">
-            <strong>Monitor:</strong> While Search and Update are run by the client as-needed,
+          <li id="section-3.1-2.3">
+            <strong>Monitor:</strong> While Search and Update are run by the client as necessary,
 monitoring is done in the background on a recurring basis. It both checks
 that the log is continuing to behave honestly and that no changes have been
-made to keys owned by the client without the client's knowledge.<a href="#section-3.2-2.3" class="pilcrow">¶</a>
+made to keys owned by the client without the client's knowledge.<a href="#section-3.1-2.3" class="pilcrow">¶</a>
 </li>
         </ol>
+</section>
+</div>
+<div id="deployment-modes">
+<section id="section-3.2">
+        <h3 id="name-deployment-modes">
+<a href="#section-3.2" class="section-number selfRef">3.2. </a><a href="#name-deployment-modes" class="section-name selfRef">Deployment Modes</a>
+        </h3>
+<p id="section-3.2-1">In the interest of satisfying the widest range of use-cases possible, three
+different modes for deploying a Transparency Log are described in this document.
+Each mode has slightly different requirements and efficiency considerations for
+both the service operator and the end-user.<a href="#section-3.2-1" class="pilcrow">¶</a></p>
+<p id="section-3.2-2"><strong>Third-party Management</strong> and <strong>Third-party Auditing</strong> are two deployment
+modes that require the service operator to delegate part of the operation of the
+Transparency Log to a third-party. Users are able to run more efficiently
+as long as they can assume that the service operator and the third-party won't
+collude to trick them into accepting malicious results.<a href="#section-3.2-2" class="pilcrow">¶</a></p>
+<p id="section-3.2-3">With both third-party modes, all requests from end-users are initially
+routed to the service operator and the service operator coordinates with the
+third-party themself. End-users never contact the third-party directly, however
+they will need a signature public key from the third-party to verify the
+third-party's assertions.<a href="#section-3.2-3" class="pilcrow">¶</a></p>
+<p id="section-3.2-4">With Third-party Management, the third-party performs the majority of the work
+of actually storing and operating the log, and the service operator only needs
+to sign new entries as they're added. With Third-party Auditing, the service
+operator performs the majority of the work of storing and operating the log, and
+obtains signatures from a lightweight third-party auditor at regular intervals
+asserting that the service operator has been constructing the tree correctly.<a href="#section-3.2-4" class="pilcrow">¶</a></p>
+<p id="section-3.2-5"><strong>Contact Monitoring</strong>, on the other hand, supports a single-party deployment
+with no third-party. The tradeoff is that the background monitoring protocol
+requires a number of requests that's proportional to the number of keys a user
+has looked up in the past. As such, it's less suited to use-cases where users
+look up a large number of ephemeral keys, but would work ideally in a use-case
+where users look up a small number of keys repeatedly (for example, the keys of
+regular contacts).<a href="#section-3.2-5" class="pilcrow">¶</a></p>
+<p id="section-3.2-6">The deployment mode of a Transparency Log is chosen when the log is first
+created and isn't able to be changed over the log's lifetime. This makes it
+important for operators to carefully consider the best long-term approach based
+on the specifics of their application.<a href="#section-3.2-6" class="pilcrow">¶</a></p>
 </section>
 </div>
 <div id="security-guarantees">
@@ -1334,15 +1363,15 @@ made to keys owned by the client without the client's knowledge.<a href="#sectio
         <h3 id="name-security-guarantees">
 <a href="#section-3.3" class="section-number selfRef">3.3. </a><a href="#name-security-guarantees" class="section-name selfRef">Security Guarantees</a>
         </h3>
-<p id="section-3.3-1">A client that executes a Search or Update protocol correctly (and does any
+<p id="section-3.3-1">A client that executes a Search or Update operation correctly (and does any
 required monitoring afterwards) receives a guarantee that the Transparency Log
-operator also executed the protocol correctly and in a way that's globally
+operator also executed the operation correctly and in a way that's globally
 consistent with what it has shown all other clients. That is, when a client
 searches for a key, they're guaranteed that the result they receive represents
 the same result that any other client searching for the same key would've seen.
 When a client updates a key, they're guaranteed that other clients will see the
 update the next time they search for the key.<a href="#section-3.3-1" class="pilcrow">¶</a></p>
-<p id="section-3.3-2">If the Transparency Log operator does not execute the protocol correctly, then
+<p id="section-3.3-2">If the Transparency Log operator does not execute an operation correctly, then
 either:<a href="#section-3.3-2" class="pilcrow">¶</a></p>
 <ol start="1" type="1" class="normal type-1" id="section-3.3-3">
 <li id="section-3.3-3.1">The client will detect the error immediately and reject the result, or<a href="#section-3.3-3.1" class="pilcrow">¶</a>
@@ -1356,15 +1385,15 @@ communication is available. Importantly, this means that clients must stay
 online for some fixed amount of time after entering an invalid state for it to
 be successfully detected.<a href="#section-3.3-4" class="pilcrow">¶</a></p>
 <p id="section-3.3-5">The exact caveats of the above guarantee depend naturally on the security of
-underlying cryptographic primitives, but also the operational mode that the
+underlying cryptographic primitives, but also the deployment mode that the
 Transparency Log relies on:<a href="#section-3.3-5" class="pilcrow">¶</a></p>
 <ul class="normal">
-<li class="normal" id="section-3.3-6.1">Contact Monitoring requires an assumption that the client that owns a key and
-all clients that look up the key do the required monitoring afterwards.<a href="#section-3.3-6.1" class="pilcrow">¶</a>
-</li>
-          <li class="normal" id="section-3.3-6.2">Third-Party Management and Third-Party Auditing require an assumption that the
+<li class="normal" id="section-3.3-6.1">Third-Party Management and Third-Party Auditing require an assumption that the
 Transparency Log operator and the third-party manager/auditor do not collude
-to trick clients into accepting malicious changes.<a href="#section-3.3-6.2" class="pilcrow">¶</a>
+to trick clients into accepting malicious results.<a href="#section-3.3-6.1" class="pilcrow">¶</a>
+</li>
+          <li class="normal" id="section-3.3-6.2">Contact Monitoring requires an assumption that the client that owns a key and
+all clients that look up the key do the necessary monitoring afterwards.<a href="#section-3.3-6.2" class="pilcrow">¶</a>
 </li>
         </ul>
 </section>
@@ -1377,10 +1406,10 @@ to trick clients into accepting malicious changes.<a href="#section-3.3-6.2" cla
 <a href="#section-4" class="section-number selfRef">4. </a><a href="#name-tree-construction" class="section-name selfRef">Tree Construction</a>
       </h2>
 <p id="section-4-1">KT relies on two combined hash tree structures: log trees and prefix trees. This
-section describes the operation of both types of trees at a high-level and the
-way that they're combined. More precise algorithms for computing the
-intermediate and root values of the trees will be given in a later section.<a href="#section-4-1" class="pilcrow">¶</a></p>
-<p id="section-4-2">All types of trees consist of <em>nodes</em> which have a byte string as their <em>value</em>.
+section describes the operation of both at a high-level and the way that they're
+combined. More precise algorithms for computing the intermediate and root values
+of the trees will be given in a later section.<a href="#section-4-1" class="pilcrow">¶</a></p>
+<p id="section-4-2">Both types of trees consist of <em>nodes</em> which have a byte string as their <em>value</em>.
 A node is either a <em>leaf</em> if it has no children, or a <em>parent</em> if it has either
 a <em>left child</em> or a <em>right child</em>. A node is the <em>root</em> of a tree if it has no
 parents, and an <em>intermediate</em> if it has both children and parents. Nodes are
@@ -1405,8 +1434,8 @@ is <em>left-balanced</em> if for every parent, either the parent is balanced, or
 left subtree of that parent is the largest balanced subtree that could be
 constructed from the leaves present in the parent's own subtree. Given a list of
 <code>n</code> items, there is a unique left-balanced binary tree structure with these
-elements as leaves. Note also that in this tree, every parent always has both a
-left and right child.<a href="#section-4.1-2" class="pilcrow">¶</a></p>
+elements as leaves. Note also that every parent always has both a left and right
+child.<a href="#section-4.1-2" class="pilcrow">¶</a></p>
 <p id="section-4.1-3">Log trees initially consist of a single leaf node. New leaves are added to the
 right-most edge of the tree along with a single parent node, to construct the
 left-balanced binary tree with <code>n+1</code> leaves.<a href="#section-4.1-3" class="pilcrow">¶</a></p>
@@ -1464,17 +1493,23 @@ parent node is the hash of the combined values of its left and right children
 <p id="section-4.3-1">Log trees are desirable because they can provide efficient consistency proofs to
 assure verifiers that nothing has been removed from a log that was present in a
 previous version. However, log trees can't be efficiently searched without
-downloading the entire log. Prefix trees are extremely efficient to search and
-can provide inclusion proofs to convince verifiers that the returned search
-results are correct. However, it's not possible to efficiently prove that a new
-version of a prefix tree contains the same data as a previous version with only
-new keys added.<a href="#section-4.3-1" class="pilcrow">¶</a></p>
-<p id="section-4.3-2">In the combined tree structure based on <span>[<a href="#Merkle2" class="cite xref">Merkle2</a>]</span>, a log tree maintains a
-record of updates to key-value pairs while a prefix tree maintains a map from
-each key to the number of times it's been updated. Importantly, the root value
-of the prefix tree after applying a given update is then stored in the log tree
-alongside the record of the update. With some caveats, this combined structure
-supports both efficient consistency proofs and can be efficiently searched.<a href="#section-4.3-2" class="pilcrow">¶</a></p>
+downloading the entire log. Prefix trees are efficient to search and can provide
+inclusion proofs to convince verifiers that the returned search results are
+correct. However, it's not possible to efficiently prove that a new version of a
+prefix tree contains the same data as a previous version with only new keys
+added.<a href="#section-4.3-1" class="pilcrow">¶</a></p>
+<p id="section-4.3-2">In the combined tree structure, which is based on <span>[<a href="#Merkle2" class="cite xref">Merkle2</a>]</span>, a log tree
+maintains a record of updates to key-value pairs while a prefix tree maintains a
+map from each key to a counter with the number of times it's been updated. Importantly, the
+root value of the prefix tree after adding the new key or increasing the counter
+of an existing key, is stored in the log tree alongside the record of the
+update. With some caveats, this combined structure supports both efficient
+consistency proofs and can be efficiently searched.<a href="#section-4.3-2" class="pilcrow">¶</a></p>
+<p id="section-4.3-3">To search the combined structure, users do a binary search looking for the first
+log entry where looking up the search key in the prefix tree at that entry
+yields the desired counter. Binary search ensures that all users will take the
+same or similar steps through the log when searching for the same key, which is
+necessary for the efficient auditing of a Transparency Log.<a href="#section-4.3-3" class="pilcrow">¶</a></p>
 </section>
 </div>
 </section>

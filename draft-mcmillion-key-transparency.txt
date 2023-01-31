@@ -3,9 +3,9 @@
 
 
 KT Working Group                                            B. McMillion
-Internet-Draft                                           30 January 2023
+Internet-Draft                                           31 January 2023
 Intended status: Informational                                          
-Expires: 3 August 2023
+Expires: 4 August 2023
 
 
                             Key Transparency
@@ -15,14 +15,14 @@ Abstract
 
    While there are several established protocols for end-to-end
    encryption, relatively little attention has been given to securely
-   distributing the end-user public keys for encryption.  As such,
-   encryption protocols are often still vulnerable to eavesdropping by
-   active attackers.  Key Transparency is a protocol for distributing
+   distributing the end-user public keys for such encryption.  As a
+   result, these protocols are often still vulnerable to eavesdropping
+   by active attackers.  Key Transparency is a protocol for distributing
    sensitive cryptographic information, such as public keys, in a way
    that reliably either prevents interference or detects that it occured
-   in a timely manner.  More generally though, it can also be applied to
-   ensure that a group of users agree on a shared value or to keep
-   tamper-evident logs of security-critical events.
+   in a timely manner.  In addition to distributing public keys, it can
+   also be applied to ensure that a group of users agree on a shared
+   value or to keep tamper-evident logs of security-critical events.
 
 Discussion Venues
 
@@ -46,7 +46,7 @@ Status of This Memo
    time.  It is inappropriate to use Internet-Drafts as reference
    material or to cite them other than as "work in progress."
 
-   This Internet-Draft will expire on 3 August 2023.
+   This Internet-Draft will expire on 4 August 2023.
 
 Copyright Notice
 
@@ -67,8 +67,8 @@ Table of Contents
    1.  Introduction
    2.  Conventions and Definitions
    3.  Protocol Overview
-     3.1.  Operational Modes
-     3.2.  Basic Protocols
+     3.1.  Basic Operations
+     3.2.  Deployment Modes
      3.3.  Security Guarantees
    4.  Tree Construction
      4.1.  Log Tree
@@ -91,21 +91,20 @@ Table of Contents
    distributed to any participants that will rely on them for
    decryption.
 
-   Typically this is done simply by having users upload their public
-   keys to a directory and allowing other users to download from the
-   directory as-needed.  With this approach, the service operator is
-   trusted not to manipulate the directory by inserting malicious public
-   keys.  As such, any encryption protocol can really only protect users
-   against passive eavesdropping on their messages.
+   Typically this is done by having users upload their public keys to a
+   simple directory where other users can download them as necessary.
+   With this approach, the service operator is trusted not to manipulate
+   the directory by inserting malicious public keys, which means the
+   underlying encryption protocol can only protect users against passive
+   eavesdropping on their messages.
 
    However most messaging systems are designed such that all messages
-   exchanged flow through the service operator's servers, which means
-   that it's extremely easy for an operator to launch an active attack.
-   That is, the service operator can insert public keys into the
-   directory that they know the private key for, attach those public
-   keys to a user's account without the user's knowledge, and then
-   inject these keys into active conversations with that user to receive
-   plaintext data.
+   exchanged flow through the service operator's servers, so it's
+   extremely easy for an operator to launch an active attack.  That is,
+   the service operator can insert public keys into the directory that
+   they know the private key for, attach those public keys to a user's
+   account without the user's knowledge, and then inject these keys into
+   active conversations with that user to receive plaintext data.
 
    Key Transparency (KT) solves this problem by requiring the service
    operator to store user public keys in a cryptographically-protected
@@ -115,16 +114,16 @@ Table of Contents
    public keys attached to their account.  However, if the service
    operator attempts to conceal some entries of the log from some users
    but not others, this creates a "forked view" of the log which is
-   permanent and imminently detectable by any out-of-band communication.
+   permanent and easily detectable with out-of-band communication.
 
    The critical improvement of KT over related protocols like
    Certificate Transparency [I-D.ietf-trans-rfc6962-bis] is that KT
    includes an efficient protocol to search the log for entries related
-   to a specific participant.  This means that users don't need to
-   download the entire log, which may be substantial, to find all
-   entries that are relevant to them.  It also means that KT can better
-   preserve user privacy by only showing entries of the log to
-   participants that genuinely need to see them.
+   to a specific participant.  This means users don't need to download
+   the entire log, which may be substantial, to find all entries that
+   are relevant to them.  It also means that KT can better preserve user
+   privacy by only showing entries of the log to participants that
+   genuinely need to see them.
 
 2.  Conventions and Definitions
 
@@ -174,16 +173,12 @@ Table of Contents
    communicate with each other out-of-band (that is, away from any
    interference by the Transparency Log operator), or communicate with
    the Transparency Log anonymously.  However, later sections will give
-   guidance on how these channels can be utilized effectively when/if
+   guidance on how these channels can be utilized effectively when or if
    they're available.
 
-3.1.  Operational Modes
+3.1.  Basic Operations
 
-   TODO
-
-3.2.  Basic Protocols
-
-   The protocols that can be executed by a client are as follows:
+   The operations that can be executed by a client are as follows:
 
    1.  *Search:* Looks up a specific key in the most recent version of
        the log.  Clients may request either a specific version of the
@@ -196,17 +191,60 @@ Table of Contents
        proof of inclusion.  Note that this means insertions are
        completed immediately and are not subject to a delay.
 
-   3.  *Monitor:* While Search and Update are run by the client as-
-       needed, monitoring is done in the background on a recurring
+   3.  *Monitor:* While Search and Update are run by the client as
+       necessary, monitoring is done in the background on a recurring
        basis.  It both checks that the log is continuing to behave
        honestly and that no changes have been made to keys owned by the
        client without the client's knowledge.
 
+3.2.  Deployment Modes
+
+   In the interest of satisfying the widest range of use-cases possible,
+   three different modes for deploying a Transparency Log are described
+   in this document.  Each mode has slightly different requirements and
+   efficiency considerations for both the service operator and the end-
+   user.
+
+   *Third-party Management* and *Third-party Auditing* are two
+   deployment modes that require the service operator to delegate part
+   of the operation of the Transparency Log to a third-party.  Users are
+   able to run more efficiently as long as they can assume that the
+   service operator and the third-party won't collude to trick them into
+   accepting malicious results.
+
+   With both third-party modes, all requests from end-users are
+   initially routed to the service operator and the service operator
+   coordinates with the third-party themself.  End-users never contact
+   the third-party directly, however they will need a signature public
+   key from the third-party to verify the third-party's assertions.
+
+   With Third-party Management, the third-party performs the majority of
+   the work of actually storing and operating the log, and the service
+   operator only needs to sign new entries as they're added.  With
+   Third-party Auditing, the service operator performs the majority of
+   the work of storing and operating the log, and obtains signatures
+   from a lightweight third-party auditor at regular intervals asserting
+   that the service operator has been constructing the tree correctly.
+
+   *Contact Monitoring*, on the other hand, supports a single-party
+   deployment with no third-party.  The tradeoff is that the background
+   monitoring protocol requires a number of requests that's proportional
+   to the number of keys a user has looked up in the past.  As such,
+   it's less suited to use-cases where users look up a large number of
+   ephemeral keys, but would work ideally in a use-case where users look
+   up a small number of keys repeatedly (for example, the keys of
+   regular contacts).
+
+   The deployment mode of a Transparency Log is chosen when the log is
+   first created and isn't able to be changed over the log's lifetime.
+   This makes it important for operators to carefully consider the best
+   long-term approach based on the specifics of their application.
+
 3.3.  Security Guarantees
 
-   A client that executes a Search or Update protocol correctly (and
+   A client that executes a Search or Update operation correctly (and
    does any required monitoring afterwards) receives a guarantee that
-   the Transparency Log operator also executed the protocol correctly
+   the Transparency Log operator also executed the operation correctly
    and in a way that's globally consistent with what it has shown all
    other clients.  That is, when a client searches for a key, they're
    guaranteed that the result they receive represents the same result
@@ -214,7 +252,7 @@ Table of Contents
    a client updates a key, they're guaranteed that other clients will
    see the update the next time they search for the key.
 
-   If the Transparency Log operator does not execute the protocol
+   If the Transparency Log operator does not execute an operation
    correctly, then either:
 
    1.  The client will detect the error immediately and reject the
@@ -231,26 +269,26 @@ Table of Contents
 
    The exact caveats of the above guarantee depend naturally on the
    security of underlying cryptographic primitives, but also the
-   operational mode that the Transparency Log relies on:
-
-   *  Contact Monitoring requires an assumption that the client that
-      owns a key and all clients that look up the key do the required
-      monitoring afterwards.
+   deployment mode that the Transparency Log relies on:
 
    *  Third-Party Management and Third-Party Auditing require an
       assumption that the Transparency Log operator and the third-party
       manager/auditor do not collude to trick clients into accepting
-      malicious changes.
+      malicious results.
+
+   *  Contact Monitoring requires an assumption that the client that
+      owns a key and all clients that look up the key do the necessary
+      monitoring afterwards.
 
 4.  Tree Construction
 
    KT relies on two combined hash tree structures: log trees and prefix
-   trees.  This section describes the operation of both types of trees
-   at a high-level and the way that they're combined.  More precise
-   algorithms for computing the intermediate and root values of the
-   trees will be given in a later section.
+   trees.  This section describes the operation of both at a high-level
+   and the way that they're combined.  More precise algorithms for
+   computing the intermediate and root values of the trees will be given
+   in a later section.
 
-   All types of trees consist of _nodes_ which have a byte string as
+   Both types of trees consist of _nodes_ which have a byte string as
    their _value_. A node is either a _leaf_ if it has no children, or a
    _parent_ if it has either a _left child_ or a _right child_. A node
    is the _root_ of a tree if it has no parents, and an _intermediate_
@@ -280,8 +318,8 @@ Table of Contents
    largest balanced subtree that could be constructed from the leaves
    present in the parent's own subtree.  Given a list of n items, there
    is a unique left-balanced binary tree structure with these elements
-   as leaves.  Note also that in this tree, every parent always has both
-   a left and right child.
+   as leaves.  Note also that every parent always has both a left and
+   right child.
 
    Log trees initially consist of a single leaf node.  New leaves are
    added to the right-most edge of the tree along with a single parent
@@ -348,20 +386,27 @@ Table of Contents
    consistency proofs to assure verifiers that nothing has been removed
    from a log that was present in a previous version.  However, log
    trees can't be efficiently searched without downloading the entire
-   log.  Prefix trees are extremely efficient to search and can provide
-   inclusion proofs to convince verifiers that the returned search
-   results are correct.  However, it's not possible to efficiently prove
-   that a new version of a prefix tree contains the same data as a
-   previous version with only new keys added.
+   log.  Prefix trees are efficient to search and can provide inclusion
+   proofs to convince verifiers that the returned search results are
+   correct.  However, it's not possible to efficiently prove that a new
+   version of a prefix tree contains the same data as a previous version
+   with only new keys added.
 
-   In the combined tree structure based on [Merkle2], a log tree
-   maintains a record of updates to key-value pairs while a prefix tree
-   maintains a map from each key to the number of times it's been
-   updated.  Importantly, the root value of the prefix tree after
-   applying a given update is then stored in the log tree alongside the
-   record of the update.  With some caveats, this combined structure
-   supports both efficient consistency proofs and can be efficiently
-   searched.
+   In the combined tree structure, which is based on [Merkle2], a log
+   tree maintains a record of updates to key-value pairs while a prefix
+   tree maintains a map from each key to a counter with the number of
+   times it's been updated.  Importantly, the root value of the prefix
+   tree after adding the new key or increasing the counter of an
+   existing key, is stored in the log tree alongside the record of the
+   update.  With some caveats, this combined structure supports both
+   efficient consistency proofs and can be efficiently searched.
+
+   To search the combined structure, users do a binary search looking
+   for the first log entry where looking up the search key in the prefix
+   tree at that entry yields the desired counter.  Binary search ensures
+   that all users will take the same or similar steps through the log
+   when searching for the same key, which is necessary for the efficient
+   auditing of a Transparency Log.
 
 5.  Security Considerations
 
