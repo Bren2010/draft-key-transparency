@@ -338,11 +338,25 @@ of an existing key, is stored in the log tree alongside the record of the
 update. With some caveats, this combined structure supports both efficient
 consistency proofs and can be efficiently searched.
 
-To search the combined structure, users do a binary search looking for the first
-log entry where looking up the search key in the prefix tree at that entry
-yields the desired counter. Binary search ensures that all users will take the
-same or similar steps through the log when searching for the same key, which is
-necessary for the efficient auditing of a Transparency Log.
+To search the combined structure, users do a binary search for the first log
+entry where looking up the search key in the prefix tree at that entry yields
+the desired counter. As such, the entry that a user arrives at through binary
+search contains the update with the key-value pair that they're looking for,
+even though the log itself is not sorted.
+
+Binary search also ensures that all users will check the same or similar entries
+when searching for the same key, which is necessary for the efficient auditing
+of a Transparency Log. To maximize this effect, users start their binary search
+at the entry whose index is the largest power of two less than the size of the
+log, and move left or right by consecutively smaller powers of two.
+
+So for example in a log with 70 entries, instead of starting a search at the
+"middle" with entry 35, users would start at entry 64. If the next step in the
+search is to move right, instead of moving to the middle of entries 64 and 70,
+which would be entry 67, users would move 4 steps (the largest power of two
+possible) to the right to entry 68. As more entries are added to the log, users
+will consistently revisit entries 64 and 68, while they may never revisit
+entries 35 or 67 after even a single new entry is added to the log.
 
 # Preserving Privacy
 
