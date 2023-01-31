@@ -344,6 +344,27 @@ yields the desired counter. Binary search ensures that all users will take the
 same or similar steps through the log when searching for the same key, which is
 necessary for the efficient auditing of a Transparency Log.
 
+# Preserving Privacy
+
+# Ciphersuites
+
+# Cryptographic Computations
+## Log Tree
+## Prefix Tree
+## Commitment
+## Tree Head Signature
+
+# User Operations
+## Search
+## Update
+## Monitor
+
+# Third-party Protocols
+## Management
+## Auditing
+
+# Out-of-Band Communication
+
 # Security Considerations
 
 TODO Security
