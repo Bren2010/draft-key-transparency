@@ -378,6 +378,7 @@ the privacy of lookup keys. One of the VRF algorithms from {{!I-D.irtf-cfrg-vrf}
 Ciphersuites are represented with the CipherSuite type. The ciphersuites are
 defined in {{kt-ciphersuites}}.
 
+
 # Cryptographic Computations
 
 ## Log Tree
@@ -387,6 +388,7 @@ defined in {{kt-ciphersuites}}.
 ## Commitment
 
 ## Tree Head Signature
+
 
 # User Operations
 
@@ -403,7 +405,9 @@ defined in {{kt-ciphersuites}}.
 
 ## Auditing
 
+
 # Out-of-Band Communication
+
 
 # Security Considerations
 
