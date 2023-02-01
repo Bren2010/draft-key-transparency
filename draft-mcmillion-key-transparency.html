@@ -1046,11 +1046,11 @@ svg :is([fill="white"], [fill^="#fff"]) {
 <thead><tr>
 <td class="left">Internet-Draft</td>
 <td class="center">Key Transparency</td>
-<td class="right">January 2023</td>
+<td class="right">February 2023</td>
 </tr></thead>
 <tfoot><tr>
 <td class="left">McMillion</td>
-<td class="center">Expires 4 August 2023</td>
+<td class="center">Expires 5 August 2023</td>
 <td class="right">[Page]</td>
 </tr></tfoot>
 </table>
@@ -1063,12 +1063,12 @@ svg :is([fill="white"], [fill^="#fff"]) {
 <dd class="internet-draft">draft-mcmillion-key-transparency-latest</dd>
 <dt class="label-published">Published:</dt>
 <dd class="published">
-<time datetime="2023-01-31" class="published">31 January 2023</time>
+<time datetime="2023-02-01" class="published">1 February 2023</time>
     </dd>
 <dt class="label-intended-status">Intended Status:</dt>
 <dd class="intended-status">Informational</dd>
 <dt class="label-expires">Expires:</dt>
-<dd class="expires"><time datetime="2023-08-04">4 August 2023</time></dd>
+<dd class="expires"><time datetime="2023-08-05">5 August 2023</time></dd>
 <dt class="label-authors">Author:</dt>
 <dd class="authors">
 <div class="author">
@@ -1117,7 +1117,7 @@ tamper-evident logs of security-critical events.<a href="#section-abstract-1" cl
         time. It is inappropriate to use Internet-Drafts as reference
         material or to cite them other than as "work in progress."<a href="#section-boilerplate.1-3" class="pilcrow">¶</a></p>
 <p id="section-boilerplate.1-4">
-        This Internet-Draft will expire on 4 August 2023.<a href="#section-boilerplate.1-4" class="pilcrow">¶</a></p>
+        This Internet-Draft will expire on 5 August 2023.<a href="#section-boilerplate.1-4" class="pilcrow">¶</a></p>
 </section>
 </div>
 <div id="copyright">
@@ -1163,6 +1163,9 @@ tamper-evident logs of security-critical events.<a href="#section-abstract-1" cl
 </li>
               <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3.2.3">
                 <p id="section-toc.1-1.3.2.3.1"><a href="#section-3.3" class="auto internal xref">3.3</a>.  <a href="#name-security-guarantees" class="internal xref">Security Guarantees</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3.2.4">
+                <p id="section-toc.1-1.3.2.4.1"><a href="#section-3.4" class="auto internal xref">3.4</a>.  <a href="#name-privacy-guarantees" class="internal xref">Privacy Guarantees</a></p>
 </li>
             </ul>
 </li>
@@ -1457,6 +1460,14 @@ all clients that look up the key do the necessary monitoring afterwards.<a href=
         </ul>
 </section>
 </div>
+<div id="privacy-guarantees">
+<section id="section-3.4">
+        <h3 id="name-privacy-guarantees">
+<a href="#section-3.4" class="section-number selfRef">3.4. </a><a href="#name-privacy-guarantees" class="section-name selfRef">Privacy Guarantees</a>
+        </h3>
+<p id="section-3.4-1">TODO<a href="#section-3.4-1" class="pilcrow">¶</a></p>
+</section>
+</div>
 </section>
 </div>
 <div id="tree-construction">
@@ -1589,7 +1600,53 @@ entries 35 or 67 after even a single new entry is added to the log.<a href="#sec
 <section id="section-5">
       <h2 id="name-preserving-privacy">
 <a href="#section-5" class="section-number selfRef">5. </a><a href="#name-preserving-privacy" class="section-name selfRef">Preserving Privacy</a>
-    </h2>
+      </h2>
+<p id="section-5-1">In addition to being more convenient for many use-cases than similar
+transparency protocols, KT is also better at preserving the privacy of a
+Transparency Log's contents. This is important because in many practical
+applications of KT, service operators expect to be able to control when
+sensitive information is revealed. In particular, an operator can often only
+reveal that a user is a member of their service to that user's friends or
+contacts. Operators may also wish to conceal when individual users perform a
+given task like rotate their public key or add a new device to their account, or
+even conceal the exact number of users their application has overall.<a href="#section-5-1" class="pilcrow">¶</a></p>
+<p id="section-5-2">Applications are primarily able to manage the privacy of their data in KT by
+enforcing access control policies on the basic operations performed by clients,
+as discussed in <a href="#protocol-overview" class="auto internal xref">Section 3</a>. However, the proofs or inclusion and
+non-inclusion given by a Transparency Log can indirectly leak information about
+other entries and lookup keys.<a href="#section-5-2" class="pilcrow">¶</a></p>
+<p id="section-5-3">As a result of the fact that log entries don't need to be inspected except as
+specifically allowed by the service, only a cryptographic commitment to the
+serialized, updated key-value pair is stored in the leaf of the log tree instead
+of the update itself. At the end of a successful search, the service operator
+then provides the committed update along with the commitment opening, which
+allows the user to verify that the commitment in the log tree really does
+correspond to the provided update.<a href="#section-5-3" class="pilcrow">¶</a></p>
+<p id="section-5-4">When users search for a key with the binary search algorithm described in
+<a href="#combined-tree" class="auto internal xref">Section 4.3</a>, they necessarily see the values of several leaves while
+conducting their search that they may not be authorized to view the contents of.
+Logging commitments to updates, instead of plaintext updates, means that unless
+the service operator explicitly provides the commitment opening, the user learns
+no information about the entry's contents.<a href="#section-5-4" class="pilcrow">¶</a></p>
+<p id="section-5-5">Beyond the log tree, the second potential source of privacy leaks is the prefix
+tree. When receiving proofs of inclusion and non-inclusion from the prefix tree,
+users also often receive indirect information about what other valid lookup keys
+exist. To prevent this, all lookup keys are processed through a Verifiable
+Random Function, or VRF.<a href="#section-5-5" class="pilcrow">¶</a></p>
+<p id="section-5-6">A VRF deterministically maps each key to a fixed-length pseudorandom value. The
+VRF can only be executed by the service operator, who holds a private key,
+however VRFs can still provide a proof that an input-output pair is valid, which
+users verify against a public key. When a user requests to search for or update
+a key, the service operator first executes its VRF on the input key to obtain
+the output key that will actually be looked up or stored in the prefix tree. The
+service operator then provides the output key, along with a proof that the
+output key is correct, in its response to the user.<a href="#section-5-6" class="pilcrow">¶</a></p>
+<p id="section-5-7">The pseudorandom output of VRFs means that even if a user indirectly observes
+that a search key exists in the prefix tree, they can't immediately learn which
+user the search key identifies. Also, the inability of users to execute the VRF
+themselves prevents offline "password cracking" approaches, where an attacker
+tries all possibilities in a low entropy space (like the set of phone numbers)
+to find the input that produces a given search key.<a href="#section-5-7" class="pilcrow">¶</a></p>
 </section>
 </div>
 <div id="ciphersuites">
