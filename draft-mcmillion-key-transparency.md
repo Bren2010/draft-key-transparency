@@ -229,6 +229,10 @@ Transparency Log relies on:
 <!-- TODO: Once the whole protocol is written, ensure this is as precise as possible. -->
 <!-- TODO: In Security Considerations, calculate how long you need to stay online for Contact Monitoring to detect an attack -->
 
+## Privacy Guarantees
+
+TODO
+
 
 # Tree Construction
 
@@ -359,6 +363,60 @@ will consistently revisit entries 64 and 68, while they may never revisit
 entries 35 or 67 after even a single new entry is added to the log.
 
 # Preserving Privacy
+
+In addition to being more convenient for many use-cases than similar
+transparency protocols, KT is also better at preserving the privacy of a
+Transparency Log's contents. This is important because in many practical
+applications of KT, service operators expect to be able to control when
+sensitive information is revealed. In particular, an operator can often only
+reveal that a user is a member of their service to that user's friends or
+contacts. Operators may also wish to conceal when individual users perform a
+given task like rotate their public key or add a new device to their account, or
+even conceal the exact number of users their application has overall.
+
+Applications are primarily able to manage the privacy of their data in KT by
+enforcing access control policies on the basic operations performed by clients,
+as discussed in {{protocol-overview}}. However, the proofs or inclusion and
+non-inclusion given by a Transparency Log can indirectly leak information about
+other entries and lookup keys.
+
+As a result of the fact that log entries don't need to be inspected except as
+specifically allowed by the service, only a cryptographic commitment to the
+serialized, updated key-value pair is stored in the leaf of the log tree instead
+of the update itself. At the end of a successful search, the service operator
+then provides the committed update along with the commitment opening, which
+allows the user to verify that the commitment in the log tree really does
+correspond to the provided update.
+
+When users search for a key with the binary search algorithm described in
+{{combined-tree}}, they necessarily see the values of several leaves while
+conducting their search that they may not be authorized to view the contents of.
+Logging commitments to updates, instead of plaintext updates, means that unless
+the service operator explicitly provides the commitment opening, the user learns
+no information about the entry's contents.
+
+Beyond the log tree, the second potential source of privacy leaks is the prefix
+tree. When receiving proofs of inclusion and non-inclusion from the prefix tree,
+users also often receive indirect information about what other valid lookup keys
+exist. To prevent this, all lookup keys are processed through a Verifiable
+Random Function, or VRF.
+
+A VRF deterministically maps each key to a fixed-length pseudorandom value. The
+VRF can only be executed by the service operator, who holds a private key,
+however VRFs can still provide a proof that an input-output pair is valid, which
+users verify against a public key. When a user requests to search for or update
+a key, the service operator first executes its VRF on the input key to obtain
+the output key that will actually be looked up or stored in the prefix tree. The
+service operator then provides the output key, along with a proof that the
+output key is correct, in its response to the user.
+
+The pseudorandom output of VRFs means that even if a user indirectly observes
+that a search key exists in the prefix tree, they can't immediately learn which
+user the search key identifies. Also, the inability of users to execute the VRF
+themselves prevents offline "password cracking" approaches, where an attacker
+tries all possibilities in a low entropy space (like the set of phone numbers)
+to find the input that produces a given search key.
+
 
 # Ciphersuites
 
