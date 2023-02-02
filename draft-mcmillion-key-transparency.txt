@@ -3,9 +3,9 @@
 
 
 KT Working Group                                            B. McMillion
-Internet-Draft                                           1 February 2023
+Internet-Draft                                           2 February 2023
 Intended status: Informational                                          
-Expires: 5 August 2023
+Expires: 6 August 2023
 
 
                             Key Transparency
@@ -46,7 +46,7 @@ Status of This Memo
    time.  It is inappropriate to use Internet-Drafts as reference
    material or to cite them other than as "work in progress."
 
-   This Internet-Draft will expire on 5 August 2023.
+   This Internet-Draft will expire on 6 August 2023.
 
 Copyright Notice
 
@@ -78,9 +78,9 @@ Table of Contents
    5.  Preserving Privacy
    6.  Ciphersuites
    7.  Cryptographic Computations
-     7.1.  Log Tree
+     7.1.  Commitment
      7.2.  Prefix Tree
-     7.3.  Commitment
+     7.3.  Log Tree
      7.4.  Tree Head Signature
    8.  User Operations
      8.1.  Search
@@ -105,9 +105,9 @@ Table of Contents
    Before any information can be exchanged in an end-to-end encrypted
    system, two things must happen.  First, participants in the system
    must provide any public keys they intend to use for encryption to the
-   service operator.  Second, these public keys must be somehow
-   distributed to any participants that will rely on them for
-   decryption.
+   service operator.  Second, the service operator must somehow
+   distribute these public keys to any participants that will rely on
+   them for decryption.
 
    Typically this is done by having users upload their public keys to a
    simple directory where other users can download them as necessary.
@@ -131,8 +131,8 @@ Table of Contents
    trivially detect that they're being impersonated by viewing the
    public keys attached to their account.  However, if the service
    operator attempts to conceal some entries of the log from some users
-   but not others, this creates a "forked view" of the log which is
-   permanent and easily detectable with out-of-band communication.
+   but not others, this creates a "forked view" which is permanent and
+   easily detectable with out-of-band communication.
 
    The critical improvement of KT over related protocols like
    Certificate Transparency [I-D.ietf-trans-rfc6962-bis] is that KT
@@ -274,7 +274,7 @@ Table of Contents
    correctly, then either:
 
    1.  The client will detect the error immediately and reject the
-       result, or
+       result of an operation, or
 
    2.  The client will permanently enter an invalid state.
 
@@ -352,9 +352,9 @@ Table of Contents
    children.
 
    Log trees are special in that they can provide both _inclusion
-   proofs_, which demonstrate that a leaf is included in a given tree,
-   and _consistency proofs_, which demonstrate that a new version of a
-   log is an extension of a past version of the log.
+   proofs_, which demonstrate that a leaf is included in a log, and
+   _consistency proofs_, which demonstrate that a new version of a log
+   is an extension of a past version of the log.
 
    An inclusion proof is given by providing the copath values of a leaf.
    The proof is verified by hashing together the leaf with the copath
@@ -370,13 +370,13 @@ Table of Contents
    Prefix trees are used for storing key-value pairs while preserving
    the ability to efficiently look up a value by its corresponding key.
 
-   Each leaf node in a prefix tree contains the encoded data of a key-
-   value pair.  Each parent node represents some specific prefix which
-   all keys in the subtree headed by that node have in common.  The
-   subtree headed by a parent's left child contains all keys that share
-   its prefix followed by an additional 0 bit, while the subtree headed
-   by a parent's right child contains all keys that share its prefix
-   followed by an additional 1 bit.
+   Each leaf node in a prefix tree represents a specific key-value pair,
+   while each parent node represents some prefix which all keys in the
+   subtree headed by that node have in common.  The subtree headed by a
+   parent's left child contains all keys that share its prefix followed
+   by an additional 0 bit, while the subtree headed by a parent's right
+   child contains all keys that share its prefix followed by an
+   additional 1 bit.
 
    The root node, in particular, represents the empty string as a
    prefix.  The root's left child contains all keys that begin with a 0
@@ -465,34 +465,33 @@ Table of Contents
    or inclusion and non-inclusion given by a Transparency Log can
    indirectly leak information about other entries and lookup keys.
 
-   As a result of the fact that log entries don't need to be inspected
-   except as specifically allowed by the service, only a cryptographic
-   commitment to the serialized, updated key-value pair is stored in the
-   leaf of the log tree instead of the update itself.  At the end of a
-   successful search, the service operator then provides the committed
-   update along with the commitment opening, which allows the user to
-   verify that the commitment in the log tree really does correspond to
-   the provided update.
-
    When users search for a key with the binary search algorithm
    described in Section 4.3, they necessarily see the values of several
    leaves while conducting their search that they may not be authorized
-   to view the contents of.  Logging commitments to updates, instead of
-   plaintext updates, means that unless the service operator explicitly
-   provides the commitment opening, the user learns no information about
-   the entry's contents.
+   to view the contents of.  However, log entries generally don't need
+   to be inspected except as specifically allowed by the service.
+
+   The privacy of log entries is maintained by storing only a
+   cryptographic commitment to the serialized, updated key-value pair in
+   the leaf of the log tree instead of the update itself.  At the end of
+   a successful search, the service operator provides the committed
+   update along with the commitment opening, which allows the user to
+   verify that the commitment in the log tree really does correspond to
+   the provided update.  By logging commitments instead of plaintext
+   updates, users learn no information about an entry's contents unless
+   the service operator explicitly provides the commitment opening.
 
    Beyond the log tree, the second potential source of privacy leaks is
    the prefix tree.  When receiving proofs of inclusion and non-
-   inclusion from the prefix tree, users also often receive indirect
+   inclusion from the prefix tree, users also receive indirect
    information about what other valid lookup keys exist.  To prevent
    this, all lookup keys are processed through a Verifiable Random
    Function, or VRF.
 
    A VRF deterministically maps each key to a fixed-length pseudorandom
    value.  The VRF can only be executed by the service operator, who
-   holds a private key, however VRFs can still provide a proof that an
-   input-output pair is valid, which users verify against a public key.
+   holds a private key.  Critically, VRFs can still provide a proof that
+   an input-output pair is valid, which users verify with a public key.
    When a user requests to search for or update a key, the service
    operator first executes its VRF on the input key to obtain the output
    key that will actually be looked up or stored in the prefix tree.
@@ -509,9 +508,9 @@ Table of Contents
 
 6.  Ciphersuites
 
-   Each Transparency Log uses a single ciphersuite, chosen when the log
-   is initially created, that specifies the following primitives to be
-   used for cryptographic computations:
+   Each Transparency Log uses a single fixed ciphersuite, chosen when
+   the log is initially created, that specifies the following primitives
+   to be used for cryptographic computations:
 
    *  A hash algorithm
 
@@ -530,13 +529,133 @@ Table of Contents
 
 7.  Cryptographic Computations
 
-7.1.  Log Tree
+7.1.  Commitment
+
+   Commitments are computed with HMAC [RFC2104], using the hash function
+   specified by the ciphersuite.  To produce a new commitment to a value
+   called message, the application generates a random 16 byte value
+   called opening and then computes:
+
+   commitment = HMAC(fixedKey, "KT Commitment" || opening || message)
+
+   where fixedKey is the 16 byte hex-decoded value:
+
+   d821f8790d97709796b4d7903357c3f5
+
+   The output value commitment may be published, while opening and
+   message should be kept private until the commitment is meant to be
+   revealed.
 
 7.2.  Prefix Tree
 
-7.3.  Commitment
+   The leaf nodes of a prefix tree are serialized as:
+
+   struct {
+       opaque key<VRF.Nh>;
+       uint32 counter;
+   } PrefixLeaf;
+
+   where key is the full search key, counter is the counter of times
+   that the key has been updated (starting at 0), and VRF.Nh is the
+   output size of the ciphersuite VRF in bytes.
+
+   The parent nodes of a prefix tree are serialized as:
+
+   struct {
+     opaque value<Hash.Nh>;
+   } PrefixParent;
+
+   where Hash denotes the ciphersuite hash function and Hash.Nh is the
+   output length of Hash.  The value of a parent node is computed by
+   hashing together the values of its left and right children:
+
+   parent.value = Hash(0x01 ||
+                      childValue(parent.leftChild) ||
+                      childValue(parent.rightChild))
+
+   childValue(node):
+     if node.type == emptyNode:
+       return make([]byte, Hash.Nh)
+     else if node.type == leafNode:
+       return Hash(0x00 || node.key || node.counter)
+     else if node.type == parentNode:
+       return node.value
+
+7.3.  Log Tree
+
+   The leaf and parent nodes of a log tree are serialized as:
+
+   struct {
+     opaque commitment<Hash.Nh>;
+     opaque prefix_tree<Hash.Nh>;
+   } LogLeaf;
+
+   struct {
+     opaque value<Hash.Nh>;
+   } LogParent;
+
+   The value of a parent node is computed by hashing together the values
+   of its left and right children:
+
+   parent.value = Hash(childValue(parent.leftChild) ||
+                      childValue(parent.rightChild))
+
+   childValue(node):
+     if node.type == leafNode:
+       return 0x00 || Hash(node.commitment || node.prefix_tree)
+     else if node.type == parentNode:
+       return 0x01 || parent.value
 
 7.4.  Tree Head Signature
+
+   The head of a Transparency Log, which represents the log's most
+   recent state, is represented as:
+
+   struct {
+     uint64 tree_size;
+     uint64 timestamp;
+     opaque signature<0..2^16-1>;
+   } TreeHead;
+
+   where tree_size counts the number of entries in the log tree and
+   timestamp is the time that the structure was generated, in
+   milliseconds since the Unix epoch.  If the Transparency Log is
+   deployed with Third-party Management then the public key used to
+   verify the signature belongs to the third-party manager; otherwise
+   the public key used belongs to the service operator.
+
+   The signature itself is computed over a TreeHeadTBS structure, which
+   incorporates long-term log configuration as well as the log's current
+   state:
+
+   enum {
+     reserved(0),
+     contactMonitoring(1),
+     thirdPartyManagement(2),
+     thirdPartyAuditing(3),
+   } DeploymentMode;
+
+   struct {
+     CipherSuite ciphersuite;
+     DeploymentMode mode;
+     opaque signature_public_key<0..2^16-1>;
+     opaque vrf_public_key<0..2^16-1>;
+
+     select (Configuration.mode) {
+       case contactMonitoring:
+       case thirdPartyManagement:
+         opaque leaf_public_key<0..2^16-1>;
+       case thirdPartyAuditing:
+         opaque auditor_public_key<0..2^16-1>;
+     }
+   } Configuration;
+
+   struct {
+     Configuration config;
+     uint64 tree_size;
+     uint64 timestamp;
+     opaque root_value<Hash.Nh>;
+   } TreeHeadTBS;
 
 8.  User Operations
 
@@ -591,6 +710,11 @@ Table of Contents
               Internet-Draft, draft-irtf-cfrg-vrf-15, 9 August 2022,
               <https://datatracker.ietf.org/doc/html/draft-irtf-cfrg-
               vrf-15>.
+
+   [RFC2104]  Krawczyk, H., Bellare, M., and R. Canetti, "HMAC: Keyed-
+              Hashing for Message Authentication", RFC Editor report,
+              DOI 10.17487/rfc2104, February 1997,
+              <https://doi.org/10.17487/rfc2104>.
 
    [RFC2119]  Bradner, S., "Key words for use in RFCs to Indicate
               Requirement Levels", BCP 14, RFC 2119,

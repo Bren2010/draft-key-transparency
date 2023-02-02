@@ -1050,7 +1050,7 @@ svg :is([fill="white"], [fill^="#fff"]) {
 </tr></thead>
 <tfoot><tr>
 <td class="left">McMillion</td>
-<td class="center">Expires 5 August 2023</td>
+<td class="center">Expires 6 August 2023</td>
 <td class="right">[Page]</td>
 </tr></tfoot>
 </table>
@@ -1063,12 +1063,12 @@ svg :is([fill="white"], [fill^="#fff"]) {
 <dd class="internet-draft">draft-mcmillion-key-transparency-latest</dd>
 <dt class="label-published">Published:</dt>
 <dd class="published">
-<time datetime="2023-02-01" class="published">1 February 2023</time>
+<time datetime="2023-02-02" class="published">2 February 2023</time>
     </dd>
 <dt class="label-intended-status">Intended Status:</dt>
 <dd class="intended-status">Informational</dd>
 <dt class="label-expires">Expires:</dt>
-<dd class="expires"><time datetime="2023-08-05">5 August 2023</time></dd>
+<dd class="expires"><time datetime="2023-08-06">6 August 2023</time></dd>
 <dt class="label-authors">Author:</dt>
 <dd class="authors">
 <div class="author">
@@ -1117,7 +1117,7 @@ tamper-evident logs of security-critical events.<a href="#section-abstract-1" cl
         time. It is inappropriate to use Internet-Drafts as reference
         material or to cite them other than as "work in progress."<a href="#section-boilerplate.1-3" class="pilcrow">¶</a></p>
 <p id="section-boilerplate.1-4">
-        This Internet-Draft will expire on 5 August 2023.<a href="#section-boilerplate.1-4" class="pilcrow">¶</a></p>
+        This Internet-Draft will expire on 6 August 2023.<a href="#section-boilerplate.1-4" class="pilcrow">¶</a></p>
 </section>
 </div>
 <div id="copyright">
@@ -1193,13 +1193,13 @@ tamper-evident logs of security-critical events.<a href="#section-abstract-1" cl
             <p id="section-toc.1-1.7.1"><a href="#section-7" class="auto internal xref">7</a>.  <a href="#name-cryptographic-computations" class="internal xref">Cryptographic Computations</a></p>
 <ul class="compact toc ulBare ulEmpty">
 <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.7.2.1">
-                <p id="section-toc.1-1.7.2.1.1"><a href="#section-7.1" class="auto internal xref">7.1</a>.  <a href="#name-log-tree-2" class="internal xref">Log Tree</a></p>
+                <p id="section-toc.1-1.7.2.1.1"><a href="#section-7.1" class="auto internal xref">7.1</a>.  <a href="#name-commitment" class="internal xref">Commitment</a></p>
 </li>
               <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.7.2.2">
                 <p id="section-toc.1-1.7.2.2.1"><a href="#section-7.2" class="auto internal xref">7.2</a>.  <a href="#name-prefix-tree-2" class="internal xref">Prefix Tree</a></p>
 </li>
               <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.7.2.3">
-                <p id="section-toc.1-1.7.2.3.1"><a href="#section-7.3" class="auto internal xref">7.3</a>.  <a href="#name-commitment" class="internal xref">Commitment</a></p>
+                <p id="section-toc.1-1.7.2.3.1"><a href="#section-7.3" class="auto internal xref">7.3</a>.  <a href="#name-log-tree-2" class="internal xref">Log Tree</a></p>
 </li>
               <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.7.2.4">
                 <p id="section-toc.1-1.7.2.4.1"><a href="#section-7.4" class="auto internal xref">7.4</a>.  <a href="#name-tree-head-signature" class="internal xref">Tree Head Signature</a></p>
@@ -1276,9 +1276,9 @@ tamper-evident logs of security-critical events.<a href="#section-abstract-1" cl
       </h2>
 <p id="section-1-1">Before any information can be exchanged in an end-to-end encrypted system, two
 things must happen. First, participants in the system must provide any public
-keys they intend to use for encryption to the service operator. Second, these
-public keys must be somehow distributed to any participants that will rely on
-them for decryption.<a href="#section-1-1" class="pilcrow">¶</a></p>
+keys they intend to use for encryption to the service operator. Second, the
+service operator must somehow distribute these public keys to any participants
+that will rely on them for decryption.<a href="#section-1-1" class="pilcrow">¶</a></p>
 <p id="section-1-2">Typically this is done by having users upload their public keys to a simple
 directory where other users can download them as necessary. With this approach,
 the service operator is trusted not to manipulate the directory by inserting
@@ -1296,8 +1296,8 @@ malicious entries added to such a log will generally be equally visible to all
 users, in which case a user can trivially detect that they're being impersonated
 by viewing the public keys attached to their account. However, if the service
 operator attempts to conceal some entries of the log from some users but not
-others, this creates a "forked view" of the log which is permanent and easily
-detectable with out-of-band communication.<a href="#section-1-4" class="pilcrow">¶</a></p>
+others, this creates a "forked view" which is permanent and easily detectable
+with out-of-band communication.<a href="#section-1-4" class="pilcrow">¶</a></p>
 <p id="section-1-5">The critical improvement of KT over related protocols like Certificate
 Transparency  <span>[<a href="#I-D.ietf-trans-rfc6962-bis" class="cite xref">I-D.ietf-trans-rfc6962-bis</a>]</span> is that KT includes an efficient
 protocol to search the log for entries related to a specific participant. This
@@ -1436,7 +1436,7 @@ update the next time they search for the key.<a href="#section-3.3-1" class="pil
 <p id="section-3.3-2">If the Transparency Log operator does not execute an operation correctly, then
 either:<a href="#section-3.3-2" class="pilcrow">¶</a></p>
 <ol start="1" type="1" class="normal type-1" id="section-3.3-3">
-<li id="section-3.3-3.1">The client will detect the error immediately and reject the result, or<a href="#section-3.3-3.1" class="pilcrow">¶</a>
+<li id="section-3.3-3.1">The client will detect the error immediately and reject the result of an operation, or<a href="#section-3.3-3.1" class="pilcrow">¶</a>
 </li>
           <li id="section-3.3-3.2">The client will permanently enter an invalid state.<a href="#section-3.3-3.2" class="pilcrow">¶</a>
 </li>
@@ -1512,9 +1512,9 @@ left-balanced binary tree with <code>n+1</code> leaves.<a href="#section-4.1-3" 
 <p id="section-4.1-4">While the value of a leaf is arbitrary, the value of a parent node is always the
 hash of the combined values of its left and right children.<a href="#section-4.1-4" class="pilcrow">¶</a></p>
 <p id="section-4.1-5">Log trees are special in that they can provide both <em>inclusion proofs</em>, which
-demonstrate that a leaf is included in a given tree, and <em>consistency proofs</em>,
-which demonstrate that a new version of a log is an extension of a past version
-of the log.<a href="#section-4.1-5" class="pilcrow">¶</a></p>
+demonstrate that a leaf is included in a log, and <em>consistency proofs</em>, which
+demonstrate that a new version of a log is an extension of a past version of the
+log.<a href="#section-4.1-5" class="pilcrow">¶</a></p>
 <p id="section-4.1-6">An inclusion proof is given by providing the copath values of a leaf. The proof
 is verified by hashing together the leaf with the copath values and checking
 that the result equals the root value of the log. Consistency proofs are a more
@@ -1530,12 +1530,12 @@ the verifier to compute both the old root value and the current root value.<a hr
         </h3>
 <p id="section-4.2-1">Prefix trees are used for storing key-value pairs while preserving the ability
 to efficiently look up a value by its corresponding key.<a href="#section-4.2-1" class="pilcrow">¶</a></p>
-<p id="section-4.2-2">Each leaf node in a prefix tree contains the encoded data of a key-value pair.
-Each parent node represents some specific prefix which all keys in the subtree
-headed by that node have in common. The subtree headed by a parent's left child
-contains all keys that share its prefix followed by an additional 0 bit, while
-the subtree headed by a parent's right child contains all keys that share its
-prefix followed by an additional 1 bit.<a href="#section-4.2-2" class="pilcrow">¶</a></p>
+<p id="section-4.2-2">Each leaf node in a prefix tree represents a specific key-value pair, while each
+parent node represents some prefix which all keys in the subtree headed by that
+node have in common. The subtree headed by a parent's left child contains all
+keys that share its prefix followed by an additional 0 bit, while the subtree
+headed by a parent's right child contains all keys that share its prefix
+followed by an additional 1 bit.<a href="#section-4.2-2" class="pilcrow">¶</a></p>
 <p id="section-4.2-3">The root node, in particular, represents the empty string as a prefix. The
 root's left child contains all keys that begin with a 0 bit, while the right
 child contains all keys that begin with a 1 bit.<a href="#section-4.2-3" class="pilcrow">¶</a></p>
@@ -1615,32 +1615,32 @@ enforcing access control policies on the basic operations performed by clients,
 as discussed in <a href="#protocol-overview" class="auto internal xref">Section 3</a>. However, the proofs or inclusion and
 non-inclusion given by a Transparency Log can indirectly leak information about
 other entries and lookup keys.<a href="#section-5-2" class="pilcrow">¶</a></p>
-<p id="section-5-3">As a result of the fact that log entries don't need to be inspected except as
-specifically allowed by the service, only a cryptographic commitment to the
-serialized, updated key-value pair is stored in the leaf of the log tree instead
-of the update itself. At the end of a successful search, the service operator
-then provides the committed update along with the commitment opening, which
-allows the user to verify that the commitment in the log tree really does
-correspond to the provided update.<a href="#section-5-3" class="pilcrow">¶</a></p>
-<p id="section-5-4">When users search for a key with the binary search algorithm described in
+<p id="section-5-3">When users search for a key with the binary search algorithm described in
 <a href="#combined-tree" class="auto internal xref">Section 4.3</a>, they necessarily see the values of several leaves while
 conducting their search that they may not be authorized to view the contents of.
-Logging commitments to updates, instead of plaintext updates, means that unless
-the service operator explicitly provides the commitment opening, the user learns
-no information about the entry's contents.<a href="#section-5-4" class="pilcrow">¶</a></p>
+However, log entries generally don't need to be inspected except as specifically
+allowed by the service.<a href="#section-5-3" class="pilcrow">¶</a></p>
+<p id="section-5-4">The privacy of log entries is maintained by storing only a cryptographic
+commitment to the serialized, updated key-value pair in the leaf of the log tree
+instead of the update itself. At the end of a successful search, the service
+operator provides the committed update along with the commitment opening, which
+allows the user to verify that the commitment in the log tree really does
+correspond to the provided update. By logging commitments instead of plaintext
+updates, users learn no information about an entry's contents unless the service
+operator explicitly provides the commitment opening.<a href="#section-5-4" class="pilcrow">¶</a></p>
 <p id="section-5-5">Beyond the log tree, the second potential source of privacy leaks is the prefix
 tree. When receiving proofs of inclusion and non-inclusion from the prefix tree,
-users also often receive indirect information about what other valid lookup keys
+users also receive indirect information about what other valid lookup keys
 exist. To prevent this, all lookup keys are processed through a Verifiable
 Random Function, or VRF.<a href="#section-5-5" class="pilcrow">¶</a></p>
 <p id="section-5-6">A VRF deterministically maps each key to a fixed-length pseudorandom value. The
-VRF can only be executed by the service operator, who holds a private key,
-however VRFs can still provide a proof that an input-output pair is valid, which
-users verify against a public key. When a user requests to search for or update
-a key, the service operator first executes its VRF on the input key to obtain
-the output key that will actually be looked up or stored in the prefix tree. The
-service operator then provides the output key, along with a proof that the
-output key is correct, in its response to the user.<a href="#section-5-6" class="pilcrow">¶</a></p>
+VRF can only be executed by the service operator, who holds a private key.
+Critically, VRFs can still provide a proof that an input-output pair is valid,
+which users verify with a public key. When a user requests to search for or
+update a key, the service operator first executes its VRF on the input key to
+obtain the output key that will actually be looked up or stored in the prefix
+tree. The service operator then provides the output key, along with a proof that
+the output key is correct, in its response to the user.<a href="#section-5-6" class="pilcrow">¶</a></p>
 <p id="section-5-7">The pseudorandom output of VRFs means that even if a user indirectly observes
 that a search key exists in the prefix tree, they can't immediately learn which
 user the search key identifies. Also, the inability of users to execute the VRF
@@ -1654,7 +1654,7 @@ to find the input that produces a given search key.<a href="#section-5-7" class=
       <h2 id="name-ciphersuites">
 <a href="#section-6" class="section-number selfRef">6. </a><a href="#name-ciphersuites" class="section-name selfRef">Ciphersuites</a>
       </h2>
-<p id="section-6-1">Each Transparency Log uses a single ciphersuite, chosen when the log is
+<p id="section-6-1">Each Transparency Log uses a single fixed ciphersuite, chosen when the log is
 initially created, that specifies the following primitives to be used for
 cryptographic computations:<a href="#section-6-1" class="pilcrow">¶</a></p>
 <ul class="normal">
@@ -1678,32 +1678,164 @@ defined in <a href="#kt-ciphersuites" class="auto internal xref">Section 12.1</a
       <h2 id="name-cryptographic-computations">
 <a href="#section-7" class="section-number selfRef">7. </a><a href="#name-cryptographic-computations" class="section-name selfRef">Cryptographic Computations</a>
       </h2>
-<div id="log-tree-1">
+<div id="commitment">
 <section id="section-7.1">
-        <h3 id="name-log-tree-2">
-<a href="#section-7.1" class="section-number selfRef">7.1. </a><a href="#name-log-tree-2" class="section-name selfRef">Log Tree</a>
-      </h3>
+        <h3 id="name-commitment">
+<a href="#section-7.1" class="section-number selfRef">7.1. </a><a href="#name-commitment" class="section-name selfRef">Commitment</a>
+        </h3>
+<p id="section-7.1-1">Commitments are computed with HMAC <span>[<a href="#RFC2104" class="cite xref">RFC2104</a>]</span>, using the hash function
+specified by the ciphersuite. To produce a new commitment to a value called
+<code>message</code>, the application generates a random 16 byte value called <code>opening</code> and
+then computes:<a href="#section-7.1-1" class="pilcrow">¶</a></p>
+<div class="lang-pseudocode sourcecode" id="section-7.1-2">
+<pre>
+commitment = HMAC(fixedKey, "KT Commitment" || opening || message)
+</pre><a href="#section-7.1-2" class="pilcrow">¶</a>
+</div>
+<p id="section-7.1-3">where <code>fixedKey</code> is the 16 byte hex-decoded value:<a href="#section-7.1-3" class="pilcrow">¶</a></p>
+<div class="alignLeft art-text artwork" id="section-7.1-4">
+<pre>
+d821f8790d97709796b4d7903357c3f5
+</pre><a href="#section-7.1-4" class="pilcrow">¶</a>
+</div>
+<p id="section-7.1-5">The output value <code>commitment</code> may be published, while <code>opening</code> and <code>message</code>
+should be kept private until the commitment is meant to be revealed.<a href="#section-7.1-5" class="pilcrow">¶</a></p>
 </section>
 </div>
 <div id="prefix-tree-1">
 <section id="section-7.2">
         <h3 id="name-prefix-tree-2">
 <a href="#section-7.2" class="section-number selfRef">7.2. </a><a href="#name-prefix-tree-2" class="section-name selfRef">Prefix Tree</a>
-      </h3>
+        </h3>
+<p id="section-7.2-1">The leaf nodes of a prefix tree are serialized as:<a href="#section-7.2-1" class="pilcrow">¶</a></p>
+<div class="lang-tls sourcecode" id="section-7.2-2">
+<pre>
+struct {
+    opaque key&lt;VRF.Nh&gt;;
+    uint32 counter;
+} PrefixLeaf;
+</pre><a href="#section-7.2-2" class="pilcrow">¶</a>
+</div>
+<p id="section-7.2-3">where <code>key</code> is the full search key, <code>counter</code> is the counter of times that the
+key has been updated (starting at 0), and <code>VRF.Nh</code> is the output size of the
+ciphersuite VRF in bytes.<a href="#section-7.2-3" class="pilcrow">¶</a></p>
+<p id="section-7.2-4">The parent nodes of a prefix tree are serialized as:<a href="#section-7.2-4" class="pilcrow">¶</a></p>
+<div class="lang-tls sourcecode" id="section-7.2-5">
+<pre>
+struct {
+  opaque value&lt;Hash.Nh&gt;;
+} PrefixParent;
+</pre><a href="#section-7.2-5" class="pilcrow">¶</a>
+</div>
+<p id="section-7.2-6">where <code>Hash</code> denotes the ciphersuite hash function and <code>Hash.Nh</code> is the output
+length of <code>Hash</code>. The value of a parent node is computed by hashing together the
+values of its left and right children:<a href="#section-7.2-6" class="pilcrow">¶</a></p>
+<div class="lang-pseudocode sourcecode" id="section-7.2-7">
+<pre>
+parent.value = Hash(0x01 ||
+                   childValue(parent.leftChild) ||
+                   childValue(parent.rightChild))
+
+childValue(node):
+  if node.type == emptyNode:
+    return make([]byte, Hash.Nh)
+  else if node.type == leafNode:
+    return Hash(0x00 || node.key || node.counter)
+  else if node.type == parentNode:
+    return node.value
+</pre><a href="#section-7.2-7" class="pilcrow">¶</a>
+</div>
 </section>
 </div>
-<div id="commitment">
+<div id="log-tree-1">
 <section id="section-7.3">
-        <h3 id="name-commitment">
-<a href="#section-7.3" class="section-number selfRef">7.3. </a><a href="#name-commitment" class="section-name selfRef">Commitment</a>
-      </h3>
+        <h3 id="name-log-tree-2">
+<a href="#section-7.3" class="section-number selfRef">7.3. </a><a href="#name-log-tree-2" class="section-name selfRef">Log Tree</a>
+        </h3>
+<p id="section-7.3-1">The leaf and parent nodes of a log tree are serialized as:<a href="#section-7.3-1" class="pilcrow">¶</a></p>
+<div class="lang-tls sourcecode" id="section-7.3-2">
+<pre>
+struct {
+  opaque commitment&lt;Hash.Nh&gt;;
+  opaque prefix_tree&lt;Hash.Nh&gt;;
+} LogLeaf;
+
+struct {
+  opaque value&lt;Hash.Nh&gt;;
+} LogParent;
+</pre><a href="#section-7.3-2" class="pilcrow">¶</a>
+</div>
+<p id="section-7.3-3">The value of a parent node is computed by hashing together the values of its
+left and right children:<a href="#section-7.3-3" class="pilcrow">¶</a></p>
+<div class="lang-pseudocode sourcecode" id="section-7.3-4">
+<pre>
+parent.value = Hash(childValue(parent.leftChild) ||
+                   childValue(parent.rightChild))
+
+childValue(node):
+  if node.type == leafNode:
+    return 0x00 || Hash(node.commitment || node.prefix_tree)
+  else if node.type == parentNode:
+    return 0x01 || parent.value
+</pre><a href="#section-7.3-4" class="pilcrow">¶</a>
+</div>
 </section>
 </div>
 <div id="tree-head-signature">
 <section id="section-7.4">
         <h3 id="name-tree-head-signature">
 <a href="#section-7.4" class="section-number selfRef">7.4. </a><a href="#name-tree-head-signature" class="section-name selfRef">Tree Head Signature</a>
-      </h3>
+        </h3>
+<p id="section-7.4-1">The head of a Transparency Log, which represents the log's most recent state, is
+represented as:<a href="#section-7.4-1" class="pilcrow">¶</a></p>
+<div class="lang-tls sourcecode" id="section-7.4-2">
+<pre>
+struct {
+  uint64 tree_size;
+  uint64 timestamp;
+  opaque signature&lt;0..2^16-1&gt;;
+} TreeHead;
+</pre><a href="#section-7.4-2" class="pilcrow">¶</a>
+</div>
+<p id="section-7.4-3">where <code>tree_size</code> counts the number of entries in the log tree and <code>timestamp</code>
+is the time that the structure was generated, in milliseconds since the Unix
+epoch. If the Transparency Log is deployed with Third-party Management then the
+public key used to verify the signature belongs to the third-party manager;
+otherwise the public key used belongs to the service operator.<a href="#section-7.4-3" class="pilcrow">¶</a></p>
+<p id="section-7.4-4">The signature itself is computed over a <code>TreeHeadTBS</code> structure, which
+incorporates long-term log configuration as well as the log's current state:<a href="#section-7.4-4" class="pilcrow">¶</a></p>
+<div class="lang-tls sourcecode" id="section-7.4-5">
+<pre>
+enum {
+  reserved(0),
+  contactMonitoring(1),
+  thirdPartyManagement(2),
+  thirdPartyAuditing(3),
+} DeploymentMode;
+
+struct {
+  CipherSuite ciphersuite;
+  DeploymentMode mode;
+  opaque signature_public_key&lt;0..2^16-1&gt;;
+  opaque vrf_public_key&lt;0..2^16-1&gt;;
+
+  select (Configuration.mode) {
+    case contactMonitoring:
+    case thirdPartyManagement:
+      opaque leaf_public_key&lt;0..2^16-1&gt;;
+    case thirdPartyAuditing:
+      opaque auditor_public_key&lt;0..2^16-1&gt;;
+  }
+} Configuration;
+
+struct {
+  Configuration config;
+  uint64 tree_size;
+  uint64 timestamp;
+  opaque root_value&lt;Hash.Nh&gt;;
+} TreeHeadTBS;
+</pre><a href="#section-7.4-5" class="pilcrow">¶</a>
+</div>
 </section>
 </div>
 </section>
@@ -1817,6 +1949,10 @@ this document<a href="#section-12-4" class="pilcrow">¶</a></p>
 <dt id="I-D.irtf-cfrg-vrf">[I-D.irtf-cfrg-vrf]</dt>
         <dd>
 <span class="refAuthor">Goldberg, S.</span>, <span class="refAuthor">Reyzin, L.</span>, <span class="refAuthor">Papadopoulos, D.</span>, and <span class="refAuthor">J. Včelák</span>, <span class="refTitle">"Verifiable Random Functions (VRFs)"</span>, <span class="refContent">Work in Progress</span>, <span class="seriesInfo">Internet-Draft, draft-irtf-cfrg-vrf-15</span>, <time datetime="2022-08-09" class="refDate">9 August 2022</time>, <span>&lt;<a href="https://datatracker.ietf.org/doc/html/draft-irtf-cfrg-vrf-15">https://datatracker.ietf.org/doc/html/draft-irtf-cfrg-vrf-15</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC2104">[RFC2104]</dt>
+        <dd>
+<span class="refAuthor">Krawczyk, H.</span>, <span class="refAuthor">Bellare, M.</span>, and <span class="refAuthor">R. Canetti</span>, <span class="refTitle">"HMAC: Keyed-Hashing for Message Authentication"</span>, <span class="seriesInfo">RFC Editor report</span>, <span class="seriesInfo">DOI 10.17487/rfc2104</span>, <time datetime="1997-02" class="refDate">February 1997</time>, <span>&lt;<a href="https://doi.org/10.17487/rfc2104">https://doi.org/10.17487/rfc2104</a>&gt;</span>. </dd>
 <dd class="break"></dd>
 <dt id="RFC2119">[RFC2119]</dt>
         <dd>
