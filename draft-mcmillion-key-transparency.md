@@ -27,6 +27,7 @@ author:
     email: brendanmcmillion@gmail.com
 
 normative:
+  RFC2104: DOI.10.17487/RFC2104
 
 informative:
   Merkle2:
@@ -439,13 +440,148 @@ defined in {{kt-ciphersuites}}.
 
 # Cryptographic Computations
 
-## Log Tree
+## Commitment
+
+Commitments are computed with HMAC {{RFC2104}}, using the hash function
+specified by the ciphersuite. To produce a new commitment to a value called
+`message`, the application generates a random 16 byte value called `opening` and
+then computes:
+
+~~~ pseudocode
+commitment = HMAC(fixedKey, "KT Commitment" || opening || message)
+~~~
+
+where `fixedKey` is the 16 byte hex-decoded value:
+
+~~~
+d821f8790d97709796b4d7903357c3f5
+~~~
+
+The output value `commitment` may be published, while `opening` and `message`
+should be kept private until the commitment is meant to be revealed.
 
 ## Prefix Tree
 
-## Commitment
+The leaf nodes of a prefix tree are serialized as:
+
+~~~ tls
+struct {
+    opaque key<VRF.Nh>;
+    uint32 counter;
+} PrefixLeaf;
+~~~
+
+where `key` is the full search key, `counter` is the counter of times that the
+key has been updated (starting at 0), and `VRF.Nh` is the output size of the
+ciphersuite VRF in bytes.
+
+The parent nodes of a prefix tree are serialized as:
+
+~~~ tls
+struct {
+  opaque value<Hash.Nh>;
+} PrefixParent;
+~~~
+
+where `Hash` denotes the ciphersuite hash function and `Hash.Nh` is the output
+length of `Hash`. The value of a parent node is computed by hashing together the
+values of its left and right children:
+
+~~~ pseudocode
+parent.value = Hash(0x01 ||
+                   childValue(parent.leftChild) ||
+                   childValue(parent.rightChild))
+
+childValue(node):
+  if node.type == emptyNode:
+    return make([]byte, Hash.Nh)
+  else if node.type == leafNode:
+    return Hash(0x00 || node.key || node.counter)
+  else if node.type == parentNode:
+    return node.value
+~~~
+
+## Log Tree
+
+The leaf and parent nodes of a log tree are serialized as:
+
+~~~ tls
+struct {
+  opaque commitment<Hash.Nh>;
+  opaque prefix_tree<Hash.Nh>;
+} LogLeaf;
+
+struct {
+  opaque value<Hash.Nh>;
+} LogParent;
+~~~
+
+The value of a parent node is computed by hashing together the values of its
+left and right children:
+
+~~~ pseudocode
+parent.value = Hash(childValue(parent.leftChild) ||
+                   childValue(parent.rightChild))
+
+childValue(node):
+  if node.type == leafNode:
+    return 0x00 || Hash(node.commitment || node.prefix_tree)
+  else if node.type == parentNode:
+    return 0x01 || parent.value
+~~~
 
 ## Tree Head Signature
+
+The head of a Transparency Log, which represents the log's most recent state, is
+represented as:
+
+~~~ tls
+struct {
+  uint64 tree_size;
+  uint64 timestamp;
+  opaque signature<0..2^16-1>;
+} TreeHead;
+~~~
+
+where `tree_size` counts the number of entries in the log tree and `timestamp`
+is the time that the structure was generated, in milliseconds since the Unix
+epoch. If the Transparency Log is deployed with Third-party Management then the
+public key used to verify the signature belongs to the third-party manager;
+otherwise the public key used belongs to the service operator.
+
+The signature itself is computed over a `TreeHeadTBS` structure, which
+incorporates long-term log configuration as well as the log's current state:
+
+~~~ tls
+enum {
+  reserved(0),
+  contactMonitoring(1),
+  thirdPartyManagement(2),
+  thirdPartyAuditing(3),
+} DeploymentMode;
+
+struct {
+  CipherSuite ciphersuite;
+  DeploymentMode mode;
+  opaque signature_public_key<0..2^16-1>;
+  opaque vrf_public_key<0..2^16-1>;
+
+  select (Configuration.mode) {
+    case contactMonitoring:
+    case thirdPartyManagement:
+      opaque leaf_public_key<0..2^16-1>;
+    case thirdPartyAuditing:
+      opaque auditor_public_key<0..2^16-1>;
+  }
+} Configuration;
+
+struct {
+  Configuration config;
+  uint64 tree_size;
+  uint64 timestamp;
+  opaque root_value<Hash.Nh>;
+} TreeHeadTBS;
+~~~
 
 
 # User Operations
