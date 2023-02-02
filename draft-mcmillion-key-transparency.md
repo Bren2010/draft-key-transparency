@@ -448,7 +448,7 @@ specified by the ciphersuite. To produce a new commitment to a value called
 then computes:
 
 ~~~ pseudocode
-commitment = HMAC(fixedKey, "KT Commitment" || opening || message)
+commitment = HMAC(fixedKey, opening || message)
 ~~~
 
 where `fixedKey` is the 16 byte hex-decoded value:
