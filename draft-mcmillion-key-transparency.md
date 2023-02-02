@@ -58,9 +58,9 @@ tamper-evident logs of security-critical events.
 
 Before any information can be exchanged in an end-to-end encrypted system, two
 things must happen. First, participants in the system must provide any public
-keys they intend to use for encryption to the service operator. Second, these
-public keys must be somehow distributed to any participants that will rely on
-them for decryption.
+keys they intend to use for encryption to the service operator. Second, the
+service operator must somehow distribute these public keys to any participants
+that will rely on them for decryption.
 
 Typically this is done by having users upload their public keys to a simple
 directory where other users can download them as necessary. With this approach,
@@ -81,8 +81,8 @@ malicious entries added to such a log will generally be equally visible to all
 users, in which case a user can trivially detect that they're being impersonated
 by viewing the public keys attached to their account. However, if the service
 operator attempts to conceal some entries of the log from some users but not
-others, this creates a "forked view" of the log which is permanent and easily
-detectable with out-of-band communication.
+others, this creates a "forked view" which is permanent and easily detectable
+with out-of-band communication.
 
 The critical improvement of KT over related protocols like Certificate
 Transparency  {{?I-D.ietf-trans-rfc6962-bis}} is that KT includes an efficient
@@ -206,7 +206,7 @@ update the next time they search for the key. <!-- subject to caching? -->
 If the Transparency Log operator does not execute an operation correctly, then
 either:
 
-1. The client will detect the error immediately and reject the result, or
+1. The client will detect the error immediately and reject the result of an operation, or
 2. The client will permanently enter an invalid state.
 
 Depending on the exact reason that the client enters an invalid state, it will
@@ -279,9 +279,9 @@ While the value of a leaf is arbitrary, the value of a parent node is always the
 hash of the combined values of its left and right children.
 
 Log trees are special in that they can provide both *inclusion proofs*, which
-demonstrate that a leaf is included in a given tree, and *consistency proofs*,
-which demonstrate that a new version of a log is an extension of a past version
-of the log.
+demonstrate that a leaf is included in a log, and *consistency proofs*, which
+demonstrate that a new version of a log is an extension of a past version of the
+log.
 
 An inclusion proof is given by providing the copath values of a leaf. The proof
 is verified by hashing together the leaf with the copath values and checking
@@ -295,12 +295,12 @@ the verifier to compute both the old root value and the current root value.
 Prefix trees are used for storing key-value pairs while preserving the ability
 to efficiently look up a value by its corresponding key.
 
-Each leaf node in a prefix tree contains the encoded data of a key-value pair.
-Each parent node represents some specific prefix which all keys in the subtree
-headed by that node have in common. The subtree headed by a parent's left child
-contains all keys that share its prefix followed by an additional 0 bit, while
-the subtree headed by a parent's right child contains all keys that share its
-prefix followed by an additional 1 bit.
+Each leaf node in a prefix tree represents a specific key-value pair, while each
+parent node represents some prefix which all keys in the subtree headed by that
+node have in common. The subtree headed by a parent's left child contains all
+keys that share its prefix followed by an additional 0 bit, while the subtree
+headed by a parent's right child contains all keys that share its prefix
+followed by an additional 1 bit.
 
 The root node, in particular, represents the empty string as a prefix. The
 root's left child contains all keys that begin with a 0 bit, while the right
@@ -380,35 +380,35 @@ as discussed in {{protocol-overview}}. However, the proofs or inclusion and
 non-inclusion given by a Transparency Log can indirectly leak information about
 other entries and lookup keys.
 
-As a result of the fact that log entries don't need to be inspected except as
-specifically allowed by the service, only a cryptographic commitment to the
-serialized, updated key-value pair is stored in the leaf of the log tree instead
-of the update itself. At the end of a successful search, the service operator
-then provides the committed update along with the commitment opening, which
-allows the user to verify that the commitment in the log tree really does
-correspond to the provided update.
-
 When users search for a key with the binary search algorithm described in
 {{combined-tree}}, they necessarily see the values of several leaves while
 conducting their search that they may not be authorized to view the contents of.
-Logging commitments to updates, instead of plaintext updates, means that unless
-the service operator explicitly provides the commitment opening, the user learns
-no information about the entry's contents.
+However, log entries generally don't need to be inspected except as specifically
+allowed by the service.
+
+The privacy of log entries is maintained by storing only a cryptographic
+commitment to the serialized, updated key-value pair in the leaf of the log tree
+instead of the update itself. At the end of a successful search, the service
+operator provides the committed update along with the commitment opening, which
+allows the user to verify that the commitment in the log tree really does
+correspond to the provided update. By logging commitments instead of plaintext
+updates, users learn no information about an entry's contents unless the service
+operator explicitly provides the commitment opening.
 
 Beyond the log tree, the second potential source of privacy leaks is the prefix
 tree. When receiving proofs of inclusion and non-inclusion from the prefix tree,
-users also often receive indirect information about what other valid lookup keys
+users also receive indirect information about what other valid lookup keys
 exist. To prevent this, all lookup keys are processed through a Verifiable
 Random Function, or VRF.
 
 A VRF deterministically maps each key to a fixed-length pseudorandom value. The
-VRF can only be executed by the service operator, who holds a private key,
-however VRFs can still provide a proof that an input-output pair is valid, which
-users verify against a public key. When a user requests to search for or update
-a key, the service operator first executes its VRF on the input key to obtain
-the output key that will actually be looked up or stored in the prefix tree. The
-service operator then provides the output key, along with a proof that the
-output key is correct, in its response to the user.
+VRF can only be executed by the service operator, who holds a private key.
+Critically, VRFs can still provide a proof that an input-output pair is valid,
+which users verify with a public key. When a user requests to search for or
+update a key, the service operator first executes its VRF on the input key to
+obtain the output key that will actually be looked up or stored in the prefix
+tree. The service operator then provides the output key, along with a proof that
+the output key is correct, in its response to the user.
 
 The pseudorandom output of VRFs means that even if a user indirectly observes
 that a search key exists in the prefix tree, they can't immediately learn which
@@ -420,7 +420,7 @@ to find the input that produces a given search key.
 
 # Ciphersuites
 
-Each Transparency Log uses a single ciphersuite, chosen when the log is
+Each Transparency Log uses a single fixed ciphersuite, chosen when the log is
 initially created, that specifies the following primitives to be used for
 cryptographic computations:
 
