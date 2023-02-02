@@ -536,7 +536,7 @@ Table of Contents
    called message, the application generates a random 16 byte value
    called opening and then computes:
 
-   commitment = HMAC(fixedKey, "KT Commitment" || opening || message)
+   commitment = HMAC(fixedKey, opening || message)
 
    where fixedKey is the 16 byte hex-decoded value:
 

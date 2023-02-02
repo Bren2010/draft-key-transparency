@@ -1689,7 +1689,7 @@ specified by the ciphersuite. To produce a new commitment to a value called
 then computes:<a href="#section-7.1-1" class="pilcrow">¶</a></p>
 <div class="lang-pseudocode sourcecode" id="section-7.1-2">
 <pre>
-commitment = HMAC(fixedKey, "KT Commitment" || opening || message)
+commitment = HMAC(fixedKey, opening || message)
 </pre><a href="#section-7.1-2" class="pilcrow">¶</a>
 </div>
 <p id="section-7.1-3">where <code>fixedKey</code> is the 16 byte hex-decoded value:<a href="#section-7.1-3" class="pilcrow">¶</a></p>
