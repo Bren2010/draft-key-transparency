@@ -118,8 +118,8 @@ version of a key or any past version. From this point forward, "key" will refer
 to a lookup key in a key-value database and "public key" or "private key" will
 be specified if otherwise.
 
-Note that while this document provides specific protocol messages and the way
-that those messages would be encoded, it does not require the use of a specific
+While this document uses the TLS presentation language {{!RFC8446}} to describe
+the structure of protocol messages, it does not require the use of a specific
 transport protocol. This is intended to allow applications to layer KT on top of
 whatever transport protocol their application already uses. In particular, this
 allows applications to continue relying on their existing access control system.
@@ -550,7 +550,7 @@ public key used to verify the signature belongs to the third-party manager;
 otherwise the public key used belongs to the service operator.
 
 The signature itself is computed over a `TreeHeadTBS` structure, which
-incorporates long-term log configuration as well as the log's current state:
+incorporates the log's current state as well as long-term log configuration:
 
 ~~~ tls
 enum {
@@ -584,9 +584,104 @@ struct {
 ~~~
 
 
+# Tree Proofs
+
+## Log Tree
+
+TODO
+- InclusionProof
+- ConsistencyProof
+
+## Prefix Tree
+
+TODO
+- PrefixProof
+
+## Combined Tree
+
+TODO
+- SearchProof
+
+~~~ tls
+struct {
+  PrefixProof prefix_proof;
+  opaque commitment<Hash.Nh>;
+} SearchStep;
+
+struct {
+  SearchStep steps<0..2^8-1>;
+} SearchProof;
+~~~
+
+
 # User Operations
 
 ## Search
+
+Users initiate a Search operation by submitting a SearchRequest to the
+Transparency Log containing the key that they're interested in. Users can
+optionally specify a specific version of the key that they'd like to receive, if
+not the most recent one. They can also include the `tree_size` of the last
+TreeHead that they successfully verified.
+
+~~~ tls
+struct {
+  opaque search_key<0..2^16-1>;
+  optional<uint32> version;
+  optional<uint64> last;
+} SearchRequest;
+~~~
+
+In turn, the Transparency Log responds with a SearchResult structure:
+
+~~~ tls
+struct {
+  opaque index<VRF.Nh>;
+  opaque proof<0..2^16-1>;
+} VRFResult;
+
+struct {
+  opaque opening<16>;
+  opaque value<0..2^32-1>;
+} SearchValue;
+
+struct {
+  TreeHead tree_head;
+  optional<ConsistencyProof> consistency;
+
+  VRFResult vrf_result;
+  SearchProof search;
+  InclusionProof inclusion;
+
+  optional<SearchValue> value;
+} SearchResult;
+~~~
+
+If `last` is present, then the Transparency Log MUST provide a consistency proof
+between the current tree and the tree when it was this size, in the
+`consistency` field.
+
+Users verify a search result by following these steps:
+
+1. Verify the proof in `consistency`, if one is present.
+2. Verify the VRF proof in `vrf_result.proof` against the requested search key
+   `SearchRequest.search_key` and the claimed VRF output `vrf_result.index`.
+3. Evaluate the search proof in `search` according to the steps in
+   {{proof-combined-tree}}. This will produce a verdict as to whether the search
+   was executed correctly, and also produce a series of leaf values for each
+   step in the search. If it's determined that the search was executed
+   incorrectly, abort with an error.
+4. Evaluate the inclusion proof in `inclusion` with the leaf values produced in
+   the previous step, to produce the root value of the tree.
+5. Verify the signature in `TreeHead.signature` with the calculated root value
+   of the tree.
+6. If the proof in `search` determined that a valid entry was found, check that
+   `value` is populated, and that the commitment in the terminal search step
+   opens to `value.value` with `value.opening`. If the proof determined that a
+   valid entry was not found, check that `value` is not populated.
+
+Provided that the above verification is successful, users may consume
+`value.value`.
 
 ## Update
 
