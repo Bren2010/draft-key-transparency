@@ -28,6 +28,7 @@ author:
 
 normative:
   RFC2104: DOI.10.17487/RFC2104
+  RFC6962: DOI.10.17487/RFC6962
 
 informative:
   Merkle2:
@@ -86,7 +87,7 @@ others, this creates a "forked view" which is permanent and easily detectable
 with out-of-band communication.
 
 The critical improvement of KT over related protocols like Certificate
-Transparency  {{?I-D.ietf-trans-rfc6962-bis}} is that KT includes an efficient
+Transparency  {{RFC6962}} is that KT includes an efficient
 protocol to search the log for entries related to a specific participant. This
 means users don't need to download the entire log, which may be substantial, to
 find all entries that are relevant to them. It also means that KT can better
@@ -276,7 +277,7 @@ Log trees initially consist of a single leaf node. New leaves are added to the
 right-most edge of the tree along with a single parent node, to construct the
 left-balanced binary tree with `n+1` leaves.
 
-While the value of a leaf is arbitrary, the value of a parent node is always the
+While leaves contain arbitrary data, the value of a parent node is always the
 hash of the combined values of its left and right children.
 
 Log trees are special in that they can provide both *inclusion proofs*, which
@@ -483,16 +484,16 @@ struct {
 } PrefixParent;
 ~~~
 
-where `Hash` denotes the ciphersuite hash function and `Hash.Nh` is the output
-length of `Hash`. The value of a parent node is computed by hashing together the
-values of its left and right children:
+where `Hash.Nh` is the output length of the ciphersuite hash function. The value
+of a parent node is computed by hashing together the values of its left and
+right children:
 
 ~~~ pseudocode
 parent.value = Hash(0x01 ||
-                   childValue(parent.leftChild) ||
-                   childValue(parent.rightChild))
+                   nodeValue(parent.leftChild) ||
+                   nodeValue(parent.rightChild))
 
-childValue(node):
+nodeValue(node):
   if node.type == emptyNode:
     return make([]byte, Hash.Nh)
   else if node.type == leafNode:
@@ -501,7 +502,9 @@ childValue(node):
     return node.value
 ~~~
 
-## Log Tree
+where `Hash` denotes the ciphersuite hash function.
+
+## Log Tree {#crypto-log-tree}
 
 The leaf and parent nodes of a log tree are serialized as:
 
@@ -520,14 +523,20 @@ The value of a parent node is computed by hashing together the values of its
 left and right children:
 
 ~~~ pseudocode
-parent.value = Hash(childValue(parent.leftChild) ||
-                   childValue(parent.rightChild))
+parent.value = Hash(hashContent(parent.leftChild) ||
+                    hashContent(parent.rightChild))
 
-childValue(node):
+hashContent(node):
   if node.type == leafNode:
-    return 0x00 || Hash(node.commitment || node.prefix_tree)
+    return 0x00 || nodeValue(node)
   else if node.type == parentNode:
-    return 0x01 || parent.value
+    return 0x01 || nodeValue(node)
+
+nodeValue(node):
+  if node.type == leafNode:
+    return Hash(node.commitment || node.prefix_tree)
+  else if node.type == parentNode:
+    return parent.value
 ~~~
 
 ## Tree Head Signature
@@ -572,7 +581,7 @@ struct {
       opaque leaf_public_key<0..2^16-1>;
     case thirdPartyAuditing:
       opaque auditor_public_key<0..2^16-1>;
-  }
+  };
 } Configuration;
 
 struct {
@@ -588,16 +597,86 @@ struct {
 
 ## Log Tree
 
-TODO
-- InclusionProof
-- ConsistencyProof
+An inclusion proof for a single leaf in a log tree is given by providing the
+copath values of a leaf. Similarly, a bulk inclusion proof for any number of
+leaves is given by providing the fewest node values that can be hashed together
+with the specified leaves to produce the root value. Such a proof is encoded as:
+
+~~~ tls
+opaque NodeValue<Hash.Nh>;
+
+struct {
+  NodeValue elements<0..2^16-1>;
+} InclusionProof;
+~~~
+
+Each `NodeValue` is a uniform size, computed by passing the relevent `LogLeaf`
+or `LogParent` structures through the `nodeValue` function in
+{{crypto-log-tree}}. Finally, the contents of the `elements` array is kept in
+left-to-right order: if a node is present in the root's left subtree, it's value
+must be listed before any values provided from nodes that are in the root's
+right subtree, and so on recursively.
+
+Consistency proofs are encoded similarly:
+
+~~~ tls
+struct {
+  NodeValue elements<0..2^16-1>;
+} ConsistencyProof;
+~~~
+
+Again, each `NodeValue` is computed by passing the relevent `LogLeaf` or
+`LogParent` structure through the `nodeValue` function. The nodes chosen
+correspond to those output by the algorithm in section 2.1.2 of {{RFC6962}}.
 
 ## Prefix Tree
 
-TODO
-- PrefixProof
+A proof from a prefix tree authenticates that a search was done correctly for a
+given search key. Such a proof is encoded as:
 
-## Combined Tree
+~~~ tls
+enum {
+  reserved(0),
+  inclusion(1),
+  nonInclusionLeaf(2),
+  nonInclusionParent(3),
+} PrefixSearchResult;
+
+struct {
+  PrefixSearchResult result;
+  NodeValue elements<0..2^16-1>;
+  select (PrefixProof.result) {
+    case inclusion:
+      uint32 counter;
+    case nonInclusionLeaf:
+      PrefixLeaf leaf;
+    case nonInclusionParent:
+  };
+} PrefixProof;
+~~~
+
+The `result` field indicates what the terminal node of the search was:
+
+- `inclusion` for a leaf node matching the requested key
+- `nonInclusionLeaf` for a leaf node not matching the requested key
+- `nonInclusionParent` for a parent node that lacks the desired child
+
+The `elements` array consists of the copath of the terminal node, in
+bottom-to-top order. That is, the terminal node's sibling would be first,
+followed by the terminal node's parent's sibling, and so on. In the event that a
+node is not present, an all-zero byte string of length `Hash.Nh` is listed
+instead.
+
+Depending on the `result` field, any additional information about the terminal
+node that's necessary to verify the proof is also provided. In particular, when
+`result` equals `inclusion`, the version counter of the requested key is
+given.
+
+The proof is verified by hashing together the provided elements, in the
+left/right arrangement dictated by the search key, and checking that the result
+equals the root value of the prefix tree.
+
+## Combined Tree {#proof-combined-tree}
 
 TODO
 - SearchProof
@@ -620,9 +699,9 @@ struct {
 
 Users initiate a Search operation by submitting a SearchRequest to the
 Transparency Log containing the key that they're interested in. Users can
-optionally specify a specific version of the key that they'd like to receive, if
-not the most recent one. They can also include the `tree_size` of the last
-TreeHead that they successfully verified.
+optionally specify a version of the key that they'd like to receive, if not the
+most recent one. They can also include the `tree_size` of the last TreeHead that
+they successfully verified.
 
 ~~~ tls
 struct {
@@ -673,12 +752,12 @@ Users verify a search result by following these steps:
    incorrectly, abort with an error.
 4. Evaluate the inclusion proof in `inclusion` with the leaf values produced in
    the previous step, to produce the root value of the tree.
-5. Verify the signature in `TreeHead.signature` with the calculated root value
+5. Verify the signature in `tree_head.signature` with the calculated root value
    of the tree.
 6. If the proof in `search` determined that a valid entry was found, check that
    `value` is populated, and that the commitment in the terminal search step
-   opens to `value.value` with `value.opening`. If the proof determined that a
-   valid entry was not found, check that `value` is not populated.
+   opens to `value.value` with opening `value.opening`. If the proof determined
+   that a valid entry was not found, check that `value` is empty.
 
 Provided that the above verification is successful, users may consume
 `value.value`.
