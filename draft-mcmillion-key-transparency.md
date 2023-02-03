@@ -668,9 +668,9 @@ node is not present, an all-zero byte string of length `Hash.Nh` is listed
 instead.
 
 Depending on the `result` field, any additional information about the terminal
-node that's necessary to verify the proof is also provided. In particular, when
-`result` equals `inclusion`, the version counter of the requested key is
-given.
+node that's necessary to verify the proof is also provided. In the case of
+`nonInclusionParent`, no additional information is needed because the
+non-terminal child's value is already in `elements`.
 
 The proof is verified by hashing together the provided elements, in the
 left/right arrangement dictated by the search key, and checking that the result
@@ -763,6 +763,38 @@ Provided that the above verification is successful, users may consume
 `value.value`.
 
 ## Update
+
+Users initiate an Update operation by submitting an UpdateRequest to the
+Transparency Log containing the new key and value to store. Users can also
+optionally include the `tree_size` of the last TreeHead that they successfully
+verified.
+
+~~~ tls
+struct {
+  opaque search_key<0..2^16-1>;
+  opaque value<0..2^32-1>;
+  optional<uint64> last;
+} UpdateRequest;
+~~~
+
+If the request is valid, the Transparency Log adds the new key-value pair to the
+log and returns an UpdateResult structure:
+
+~~~ tls
+struct {
+  TreeHead tree_head;
+  optional<ConsistencyProof> consistency;
+
+  VRFResult vrf_result;
+  SearchProof search;
+  InclusionProof inclusion;
+
+  opaque opening<16>;
+} UpdateResult;
+~~~
+
+Users verify the UpdateResult as if it were a SearchResult for the most recent
+version of `search_key`.
 
 ## Monitor
 
