@@ -3,9 +3,9 @@
 
 
 KT Working Group                                            B. McMillion
-Internet-Draft                                           2 February 2023
+Internet-Draft                                           3 February 2023
 Intended status: Informational                                          
-Expires: 6 August 2023
+Expires: 7 August 2023
 
 
                             Key Transparency
@@ -46,7 +46,7 @@ Status of This Memo
    time.  It is inappropriate to use Internet-Drafts as reference
    material or to cite them other than as "work in progress."
 
-   This Internet-Draft will expire on 6 August 2023.
+   This Internet-Draft will expire on 7 August 2023.
 
 Copyright Notice
 
@@ -82,21 +82,25 @@ Table of Contents
      7.2.  Prefix Tree
      7.3.  Log Tree
      7.4.  Tree Head Signature
-   8.  User Operations
-     8.1.  Search
-     8.2.  Update
-     8.3.  Monitor
-   9.  Third-party Protocols
-     9.1.  Management
-     9.2.  Auditing
-   10. Out-of-Band Communication
-   11. Security Considerations
-   12. IANA Considerations
-     12.1.  KT Ciphersuites
-     12.2.  KT Designated Expert Pool
-   13. References
-     13.1.  Normative References
-     13.2.  Informative References
+   8.  Tree Proofs
+     8.1.  Log Tree
+     8.2.  Prefix Tree
+     8.3.  Combined Tree
+   9.  User Operations
+     9.1.  Search
+     9.2.  Update
+     9.3.  Monitor
+   10. Third-party Protocols
+     10.1.  Management
+     10.2.  Auditing
+   11. Out-of-Band Communication
+   12. Security Considerations
+   13. IANA Considerations
+     13.1.  KT Ciphersuites
+     13.2.  KT Designated Expert Pool
+   14. References
+     14.1.  Normative References
+     14.2.  Informative References
    Acknowledgments
    Author's Address
 
@@ -135,13 +139,13 @@ Table of Contents
    easily detectable with out-of-band communication.
 
    The critical improvement of KT over related protocols like
-   Certificate Transparency [I-D.ietf-trans-rfc6962-bis] is that KT
-   includes an efficient protocol to search the log for entries related
-   to a specific participant.  This means users don't need to download
-   the entire log, which may be substantial, to find all entries that
-   are relevant to them.  It also means that KT can better preserve user
-   privacy by only showing entries of the log to participants that
-   genuinely need to see them.
+   Certificate Transparency [RFC6962] is that KT includes an efficient
+   protocol to search the log for entries related to a specific
+   participant.  This means users don't need to download the entire log,
+   which may be substantial, to find all entries that are relevant to
+   them.  It also means that KT can better preserve user privacy by only
+   showing entries of the log to participants that genuinely need to see
+   them.
 
 2.  Conventions and Definitions
 
@@ -172,8 +176,8 @@ Table of Contents
    key in a key-value database and "public key" or "private key" will be
    specified if otherwise.
 
-   Note that while this document provides specific protocol messages and
-   the way that those messages would be encoded, it does not require the
+   While this document uses the TLS presentation language [RFC8446] to
+   describe the structure of protocol messages, it does not require the
    use of a specific transport protocol.  This is intended to allow
    applications to layer KT on top of whatever transport protocol their
    application already uses.  In particular, this allows applications to
@@ -347,7 +351,7 @@ Table of Contents
    added to the right-most edge of the tree along with a single parent
    node, to construct the left-balanced binary tree with n+1 leaves.
 
-   While the value of a leaf is arbitrary, the value of a parent node is
+   While leaves contain arbitrary data, the value of a parent node is
    always the hash of the combined values of its left and right
    children.
 
@@ -525,7 +529,7 @@ Table of Contents
    One of the VRF algorithms from [I-D.irtf-cfrg-vrf] must be used.
 
    Ciphersuites are represented with the CipherSuite type.  The
-   ciphersuites are defined in Section 12.1.
+   ciphersuites are defined in Section 13.1.
 
 7.  Cryptographic Computations
 
@@ -565,21 +569,23 @@ Table of Contents
      opaque value<Hash.Nh>;
    } PrefixParent;
 
-   where Hash denotes the ciphersuite hash function and Hash.Nh is the
-   output length of Hash.  The value of a parent node is computed by
-   hashing together the values of its left and right children:
+   where Hash.Nh is the output length of the ciphersuite hash function.
+   The value of a parent node is computed by hashing together the values
+   of its left and right children:
 
    parent.value = Hash(0x01 ||
-                      childValue(parent.leftChild) ||
-                      childValue(parent.rightChild))
+                      nodeValue(parent.leftChild) ||
+                      nodeValue(parent.rightChild))
 
-   childValue(node):
+   nodeValue(node):
      if node.type == emptyNode:
        return make([]byte, Hash.Nh)
      else if node.type == leafNode:
        return Hash(0x00 || node.key || node.counter)
      else if node.type == parentNode:
        return node.value
+
+   where Hash denotes the ciphersuite hash function.
 
 7.3.  Log Tree
 
@@ -597,14 +603,20 @@ Table of Contents
    The value of a parent node is computed by hashing together the values
    of its left and right children:
 
-   parent.value = Hash(childValue(parent.leftChild) ||
-                      childValue(parent.rightChild))
+   parent.value = Hash(hashContent(parent.leftChild) ||
+                       hashContent(parent.rightChild))
 
-   childValue(node):
+   hashContent(node):
      if node.type == leafNode:
-       return 0x00 || Hash(node.commitment || node.prefix_tree)
+       return 0x00 || nodeValue(node)
      else if node.type == parentNode:
-       return 0x01 || parent.value
+       return 0x01 || nodeValue(node)
+
+   nodeValue(node):
+     if node.type == leafNode:
+       return Hash(node.commitment || node.prefix_tree)
+     else if node.type == parentNode:
+       return parent.value
 
 7.4.  Tree Head Signature
 
@@ -625,8 +637,8 @@ Table of Contents
    the public key used belongs to the service operator.
 
    The signature itself is computed over a TreeHeadTBS structure, which
-   incorporates long-term log configuration as well as the log's current
-   state:
+   incorporates the log's current state as well as long-term log
+   configuration:
 
    enum {
      reserved(0),
@@ -647,7 +659,7 @@ Table of Contents
          opaque leaf_public_key<0..2^16-1>;
        case thirdPartyAuditing:
          opaque auditor_public_key<0..2^16-1>;
-     }
+     };
    } Configuration;
 
    struct {
@@ -657,52 +669,243 @@ Table of Contents
      opaque root_value<Hash.Nh>;
    } TreeHeadTBS;
 
-8.  User Operations
+8.  Tree Proofs
 
-8.1.  Search
+8.1.  Log Tree
 
-8.2.  Update
+   An inclusion proof for a single leaf in a log tree is given by
+   providing the copath values of a leaf.  Similarly, a bulk inclusion
+   proof for any number of leaves is given by providing the fewest node
+   values that can be hashed together with the specified leaves to
+   produce the root value.  Such a proof is encoded as:
 
-8.3.  Monitor
+   opaque NodeValue<Hash.Nh>;
 
-9.  Third-party Protocols
+   struct {
+     NodeValue elements<0..2^16-1>;
+   } InclusionProof;
 
-9.1.  Management
+   Each NodeValue is a uniform size, computed by passing the relevent
+   LogLeaf or LogParent structures through the nodeValue function in
+   Section 7.3.  Finally, the contents of the elements array is kept in
+   left-to-right order: if a node is present in the root's left subtree,
+   it's value must be listed before any values provided from nodes that
+   are in the root's right subtree, and so on recursively.
 
-9.2.  Auditing
+   Consistency proofs are encoded similarly:
 
-10.  Out-of-Band Communication
+   struct {
+     NodeValue elements<0..2^16-1>;
+   } ConsistencyProof;
 
-11.  Security Considerations
+   Again, each NodeValue is computed by passing the relevent LogLeaf or
+   LogParent structure through the nodeValue function.  The nodes chosen
+   correspond to those output by the algorithm in section 2.1.2 of
+   [RFC6962].
+
+8.2.  Prefix Tree
+
+   A proof from a prefix tree authenticates that a search was done
+   correctly for a given search key.  Such a proof is encoded as:
+
+   enum {
+     reserved(0),
+     inclusion(1),
+     nonInclusionLeaf(2),
+     nonInclusionParent(3),
+   } PrefixSearchResult;
+
+   struct {
+     PrefixSearchResult result;
+     NodeValue elements<0..2^16-1>;
+     select (PrefixProof.result) {
+       case inclusion:
+         uint32 counter;
+       case nonInclusionLeaf:
+         PrefixLeaf leaf;
+       case nonInclusionParent:
+     };
+   } PrefixProof;
+
+   The result field indicates what the terminal node of the search was:
+
+   *  inclusion for a leaf node matching the requested key
+
+   *  nonInclusionLeaf for a leaf node not matching the requested key
+
+   *  nonInclusionParent for a parent node that lacks the desired child
+
+   The elements array consists of the copath of the terminal node, in
+   bottom-to-top order.  That is, the terminal node's sibling would be
+   first, followed by the terminal node's parent's sibling, and so on.
+   In the event that a node is not present, an all-zero byte string of
+   length Hash.Nh is listed instead.
+
+   Depending on the result field, any additional information about the
+   terminal node that's necessary to verify the proof is also provided.
+   In the case of nonInclusionParent, no additional information is
+   needed because the non-terminal child's value is already in elements.
+
+   The proof is verified by hashing together the provided elements, in
+   the left/right arrangement dictated by the search key, and checking
+   that the result equals the root value of the prefix tree.
+
+8.3.  Combined Tree
+
+   TODO - SearchProof
+
+   struct {
+     PrefixProof prefix_proof;
+     opaque commitment<Hash.Nh>;
+   } SearchStep;
+
+   struct {
+     SearchStep steps<0..2^8-1>;
+   } SearchProof;
+
+9.  User Operations
+
+9.1.  Search
+
+   Users initiate a Search operation by submitting a SearchRequest to
+   the Transparency Log containing the key that they're interested in.
+   Users can optionally specify a version of the key that they'd like to
+   receive, if not the most recent one.  They can also include the
+   tree_size of the last TreeHead that they successfully verified.
+
+   struct {
+     opaque search_key<0..2^16-1>;
+     optional<uint32> version;
+     optional<uint64> last;
+   } SearchRequest;
+
+   In turn, the Transparency Log responds with a SearchResult structure:
+
+   struct {
+     opaque index<VRF.Nh>;
+     opaque proof<0..2^16-1>;
+   } VRFResult;
+
+   struct {
+     opaque opening<16>;
+     opaque value<0..2^32-1>;
+   } SearchValue;
+
+   struct {
+     TreeHead tree_head;
+     optional<ConsistencyProof> consistency;
+
+     VRFResult vrf_result;
+     SearchProof search;
+     InclusionProof inclusion;
+
+     optional<SearchValue> value;
+   } SearchResult;
+
+   If last is present, then the Transparency Log MUST provide a
+   consistency proof between the current tree and the tree when it was
+   this size, in the consistency field.
+
+   Users verify a search result by following these steps:
+
+   1.  Verify the proof in consistency, if one is present.
+
+   2.  Verify the VRF proof in vrf_result.proof against the requested
+       search key SearchRequest.search_key and the claimed VRF output
+       vrf_result.index.
+
+   3.  Evaluate the search proof in search according to the steps in
+       Section 8.3.  This will produce a verdict as to whether the
+       search was executed correctly, and also produce a series of leaf
+       values for each step in the search.  If it's determined that the
+       search was executed incorrectly, abort with an error.
+
+   4.  Evaluate the inclusion proof in inclusion with the leaf values
+       produced in the previous step, to produce the root value of the
+       tree.
+
+   5.  Verify the signature in tree_head.signature with the calculated
+       root value of the tree.
+
+   6.  If the proof in search determined that a valid entry was found,
+       check that value is populated, and that the commitment in the
+       terminal search step opens to value.value with opening
+       value.opening.  If the proof determined that a valid entry was
+       not found, check that value is empty.
+
+   Provided that the above verification is successful, users may consume
+   value.value.
+
+9.2.  Update
+
+   Users initiate an Update operation by submitting an UpdateRequest to
+   the Transparency Log containing the new key and value to store.
+   Users can also optionally include the tree_size of the last TreeHead
+   that they successfully verified.
+
+   struct {
+     opaque search_key<0..2^16-1>;
+     opaque value<0..2^32-1>;
+     optional<uint64> last;
+   } UpdateRequest;
+
+   If the request is valid, the Transparency Log adds the new key-value
+   pair to the log and returns an UpdateResult structure:
+
+   struct {
+     TreeHead tree_head;
+     optional<ConsistencyProof> consistency;
+
+     VRFResult vrf_result;
+     SearchProof search;
+     InclusionProof inclusion;
+
+     opaque opening<16>;
+   } UpdateResult;
+
+   Users verify the UpdateResult as if it were a SearchResult for the
+   most recent version of search_key.
+
+9.3.  Monitor
+
+10.  Third-party Protocols
+
+10.1.  Management
+
+10.2.  Auditing
+
+11.  Out-of-Band Communication
+
+12.  Security Considerations
 
    TODO Security
 
-12.  IANA Considerations
+13.  IANA Considerations
 
    This document requests the creation of the following new IANA
    registries:
 
-   *  KT Ciphersuites (Section 12.1)
+   *  KT Ciphersuites (Section 13.1)
 
    All of these registries should be under a heading of "Key
    Transparency", and assignments are made via the Specification
-   Required policy [RFC8126].  See Section 12.2 for additional
+   Required policy [RFC8126].  See Section 13.2 for additional
    information about the KT Designated Experts (DEs).
 
    RFC EDITOR: Please replace XXXX throughout with the RFC number
    assigned to this document
 
-12.1.  KT Ciphersuites
+13.1.  KT Ciphersuites
 
    TODO
 
-12.2.  KT Designated Expert Pool
+13.2.  KT Designated Expert Pool
 
    TODO
 
-13.  References
+14.  References
 
-13.1.  Normative References
+14.1.  Normative References
 
    [I-D.irtf-cfrg-vrf]
               Goldberg, S., Reyzin, L., Papadopoulos, D., and J. Včelák,
@@ -721,6 +924,10 @@ Table of Contents
               DOI 10.17487/RFC2119, March 1997,
               <https://www.rfc-editor.org/rfc/rfc2119>.
 
+   [RFC6962]  Laurie, B., Langley, A., and E. Kasper, "Certificate
+              Transparency", RFC Editor report, DOI 10.17487/rfc6962,
+              June 2013, <https://doi.org/10.17487/rfc6962>.
+
    [RFC8126]  Cotton, M., Leiba, B., and T. Narten, "Guidelines for
               Writing an IANA Considerations Section in RFCs", BCP 26,
               RFC 8126, DOI 10.17487/RFC8126, June 2017,
@@ -730,14 +937,11 @@ Table of Contents
               2119 Key Words", BCP 14, RFC 8174, DOI 10.17487/RFC8174,
               May 2017, <https://www.rfc-editor.org/rfc/rfc8174>.
 
-13.2.  Informative References
+   [RFC8446]  Rescorla, E., "The Transport Layer Security (TLS) Protocol
+              Version 1.3", RFC 8446, DOI 10.17487/RFC8446, August 2018,
+              <https://www.rfc-editor.org/rfc/rfc8446>.
 
-   [I-D.ietf-trans-rfc6962-bis]
-              Laurie, B., Langley, A., Kasper, E., Messeri, E., and R.
-              Stradling, "Certificate Transparency Version 2.0", Work in
-              Progress, Internet-Draft, draft-ietf-trans-rfc6962-bis-42,
-              31 August 2021, <https://datatracker.ietf.org/doc/html/
-              draft-ietf-trans-rfc6962-bis-42>.
+14.2.  Informative References
 
    [Merkle2]  Hu, Y., Hooshmand, K., Kalidhindi, H., Yang, S. J., and R.
               A. Popa, "Merkle^2: A Low-Latency Transparency Log
