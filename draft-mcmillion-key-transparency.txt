@@ -3,9 +3,9 @@
 
 
 KT Working Group                                            B. McMillion
-Internet-Draft                                           3 February 2023
+Internet-Draft                                          23 February 2023
 Intended status: Informational                                          
-Expires: 7 August 2023
+Expires: 27 August 2023
 
 
                             Key Transparency
@@ -46,7 +46,7 @@ Status of This Memo
    time.  It is inappropriate to use Internet-Drafts as reference
    material or to cite them other than as "work in progress."
 
-   This Internet-Draft will expire on 7 August 2023.
+   This Internet-Draft will expire on 27 August 2023.
 
 Copyright Notice
 
@@ -70,7 +70,6 @@ Table of Contents
      3.1.  Basic Operations
      3.2.  Deployment Modes
      3.3.  Security Guarantees
-     3.4.  Privacy Guarantees
    4.  Tree Construction
      4.1.  Log Tree
      4.2.  Prefix Tree
@@ -108,10 +107,10 @@ Table of Contents
 
    Before any information can be exchanged in an end-to-end encrypted
    system, two things must happen.  First, participants in the system
-   must provide any public keys they intend to use for encryption to the
-   service operator.  Second, the service operator must somehow
-   distribute these public keys to any participants that will rely on
-   them for decryption.
+   must provide to the service operator any public keys they wish to use
+   to receive messages.  Second, the service operator must somehow
+   distribute these public keys to any participants that wish to send
+   messages to those users.
 
    Typically this is done by having users upload their public keys to a
    simple directory where other users can download them as necessary.
@@ -302,10 +301,6 @@ Table of Contents
       owns a key and all clients that look up the key do the necessary
       monitoring afterwards.
 
-3.4.  Privacy Guarantees
-
-   TODO
-
 4.  Tree Construction
 
    KT relies on two combined hash tree structures: log trees and prefix
@@ -323,7 +318,7 @@ Table of Contents
 
    The _descendants_ of a node are that node, its children, and the
    descendants of its children.  A _subtree_ of a tree is the tree given
-   by the descendants of any node, called the _head_ of the subtree.
+   by the descendants of a node, called the _head_ of the subtree.
 
    The _direct path_ of a root node is the empty list, and of any other
    node is the concatenation of that node's parent along with the
@@ -367,7 +362,7 @@ Table of Contents
    a consistency proof, the prover provides the minimum set of
    intermediate node values from the current tree that allows the
    verifier to compute both the old root value and the current root
-   value.
+   value.  An algorithm for this is given in section 2.1.2 of [RFC6962].
 
 4.2.  Prefix Tree
 
@@ -466,7 +461,7 @@ Table of Contents
    Applications are primarily able to manage the privacy of their data
    in KT by enforcing access control policies on the basic operations
    performed by clients, as discussed in Section 3.  However, the proofs
-   or inclusion and non-inclusion given by a Transparency Log can
+   of inclusion and non-inclusion given by a Transparency Log can
    indirectly leak information about other entries and lookup keys.
 
    When users search for a key with the binary search algorithm
@@ -490,13 +485,13 @@ Table of Contents
    inclusion from the prefix tree, users also receive indirect
    information about what other valid lookup keys exist.  To prevent
    this, all lookup keys are processed through a Verifiable Random
-   Function, or VRF.
+   Function, or VRF [I-D.irtf-cfrg-vrf].
 
    A VRF deterministically maps each key to a fixed-length pseudorandom
    value.  The VRF can only be executed by the service operator, who
-   holds a private key.  Critically, VRFs can still provide a proof that
-   an input-output pair is valid, which users verify with a public key.
-   When a user requests to search for or update a key, the service
+   holds a private key.  But critically, VRFs can still provide a proof
+   that an input-output pair is valid, which users verify with a public
+   key.  When a user requests to search for or update a key, the service
    operator first executes its VRF on the input key to obtain the output
    key that will actually be looked up or stored in the prefix tree.
    The service operator then provides the output key, along with a proof
@@ -504,9 +499,9 @@ Table of Contents
 
    The pseudorandom output of VRFs means that even if a user indirectly
    observes that a search key exists in the prefix tree, they can't
-   immediately learn which user the search key identifies.  Also, the
-   inability of users to execute the VRF themselves prevents offline
-   "password cracking" approaches, where an attacker tries all
+   immediately learn which user the search key identifies.  The
+   inability of users to execute the VRF themselves also prevents
+   offline "password cracking" approaches, where an attacker tries all
    possibilities in a low entropy space (like the set of phone numbers)
    to find the input that produces a given search key.
 
@@ -560,8 +555,9 @@ Table of Contents
    } PrefixLeaf;
 
    where key is the full search key, counter is the counter of times
-   that the key has been updated (starting at 0), and VRF.Nh is the
-   output size of the ciphersuite VRF in bytes.
+   that the key has been updated (starting at 0 for a key that was just
+   created), and VRF.Nh is the output size of the ciphersuite VRF in
+   bytes.
 
    The parent nodes of a prefix tree are serialized as:
 
