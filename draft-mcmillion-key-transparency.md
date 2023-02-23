@@ -59,10 +59,10 @@ tamper-evident logs of security-critical events.
 # Introduction
 
 Before any information can be exchanged in an end-to-end encrypted system, two
-things must happen. First, participants in the system must provide any public
-keys they intend to use for encryption to the service operator. Second, the
-service operator must somehow distribute these public keys to any participants
-that will rely on them for decryption.
+things must happen. First, participants in the system must provide to the
+service operator any public keys they wish to use to receive messages. Second,
+the service operator must somehow distribute these public keys to any
+participants that wish to send messages to those users.
 
 Typically this is done by having users upload their public keys to a simple
 directory where other users can download them as necessary. With this approach,
@@ -231,10 +231,6 @@ Transparency Log relies on:
 <!-- TODO: Once the whole protocol is written, ensure this is as precise as possible. -->
 <!-- TODO: In Security Considerations, calculate how long you need to stay online for Contact Monitoring to detect an attack -->
 
-## Privacy Guarantees
-
-TODO
-
 
 # Tree Construction
 
@@ -251,7 +247,7 @@ parents, and an *intermediate* if it has both children and parents. Nodes are
 *siblings* if they share the same parent.
 
 The *descendants* of a node are that node, its children, and the descendants of
-its children. A *subtree* of a tree is the tree given by the descendants of any
+its children. A *subtree* of a tree is the tree given by the descendants of a
 node, called the *head* of the subtree.
 
 The *direct path* of a root node is the empty list, and of any other node is the
@@ -290,7 +286,8 @@ is verified by hashing together the leaf with the copath values and checking
 that the result equals the root value of the log. Consistency proofs are a more
 general version of the same idea. With a consistency proof, the prover provides
 the minimum set of intermediate node values from the current tree that allows
-the verifier to compute both the old root value and the current root value.
+the verifier to compute both the old root value and the current root value. An
+algorithm for this is given in section 2.1.2 of {{RFC6962}}.
 
 ## Prefix Tree
 
@@ -378,7 +375,7 @@ even conceal the exact number of users their application has overall.
 
 Applications are primarily able to manage the privacy of their data in KT by
 enforcing access control policies on the basic operations performed by clients,
-as discussed in {{protocol-overview}}. However, the proofs or inclusion and
+as discussed in {{protocol-overview}}. However, the proofs of inclusion and
 non-inclusion given by a Transparency Log can indirectly leak information about
 other entries and lookup keys.
 
@@ -401,11 +398,11 @@ Beyond the log tree, the second potential source of privacy leaks is the prefix
 tree. When receiving proofs of inclusion and non-inclusion from the prefix tree,
 users also receive indirect information about what other valid lookup keys
 exist. To prevent this, all lookup keys are processed through a Verifiable
-Random Function, or VRF.
+Random Function, or VRF {{!I-D.irtf-cfrg-vrf}}.
 
 A VRF deterministically maps each key to a fixed-length pseudorandom value. The
 VRF can only be executed by the service operator, who holds a private key.
-Critically, VRFs can still provide a proof that an input-output pair is valid,
+But critically, VRFs can still provide a proof that an input-output pair is valid,
 which users verify with a public key. When a user requests to search for or
 update a key, the service operator first executes its VRF on the input key to
 obtain the output key that will actually be looked up or stored in the prefix
@@ -414,10 +411,10 @@ the output key is correct, in its response to the user.
 
 The pseudorandom output of VRFs means that even if a user indirectly observes
 that a search key exists in the prefix tree, they can't immediately learn which
-user the search key identifies. Also, the inability of users to execute the VRF
-themselves prevents offline "password cracking" approaches, where an attacker
-tries all possibilities in a low entropy space (like the set of phone numbers)
-to find the input that produces a given search key.
+user the search key identifies. The inability of users to execute the VRF
+themselves also prevents offline "password cracking" approaches, where an
+attacker tries all possibilities in a low entropy space (like the set of phone
+numbers) to find the input that produces a given search key.
 
 
 # Ciphersuites
@@ -473,8 +470,8 @@ struct {
 ~~~
 
 where `key` is the full search key, `counter` is the counter of times that the
-key has been updated (starting at 0), and `VRF.Nh` is the output size of the
-ciphersuite VRF in bytes.
+key has been updated (starting at 0 for a key that was just created), and
+`VRF.Nh` is the output size of the ciphersuite VRF in bytes.
 
 The parent nodes of a prefix tree are serialized as:
 
