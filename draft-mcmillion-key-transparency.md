@@ -729,6 +729,46 @@ leaf values can then be combined with the proof in `inclusion` to check that the
 output matches the root of the log tree.
 
 
+# Update Format
+
+The updates committed to by a combined tree structure contain the new value of a
+search key, along with additional information depending on the deployment mode
+of the Transparency Log. They are serialized as follows:
+
+~~~ tls
+struct {
+  select (Configuration.mode) {
+    case contactMonitoring:
+    case thirdPartyManagement:
+      opaque signature<0..2^16-1>;
+    case thirdPartyAuditing:
+  };
+} UpdatePrefix;
+
+struct {
+  UpdatePrefix prefix;
+  opaque value<0..2^32-1>;
+} UpdateValue;
+~~~
+
+The `value` field contains the new value of the search key.
+
+In the event that third-party management is used, the `prefix` field contains a
+signature from the service operator, using the public key from
+`Configuration.leaf_public_key`, over the following structure:
+
+~~~ tls
+struct {
+  opaque search_key<0..2^16-1>;
+  opaque value<0..2^32-1>;
+} UpdateTBS;
+~~~
+
+The `search_key` field contains the search key being updated, while `value`
+contains the same contents as `UpdateValue.value`. Clients MUST successfully
+verify this signature before consuming `UpdateValue.value`.
+
+
 # User Operations
 
 ## Search
@@ -778,21 +818,24 @@ between the current tree and the tree when it was this size, in the
 Users verify a search result by following these steps:
 
 1. Verify the proof in `consistency`, if one is present.
-2. Verify the VRF proof in `vrf_result.proof` against the requested search key
-   `SearchRequest.search_key` and the claimed VRF output `vrf_result.index`.
+2. Verify the VRF proof in `VRFResult.proof` against the requested search key
+   `SearchRequest.search_key` and the claimed VRF output `VRFResult.index`.
 3. Evaluate the search proof in `search` according to the steps in
    {{proof-combined-tree}}. This will produce a verdict as to whether the search
    was executed correctly, and also a candidate root value for the tree. If it's
    determined that the search was executed incorrectly, abort with an error.
-4. Verify the signature in `tree_head.signature` with the calculated root value
+4. Verify the signature in `TreeHead.signature` with the calculated root value
    of the tree.
 5. If the proof in `search` determined that a valid entry was found, check that
    `value` is populated, and that the commitment in the terminal search step
-   opens to `value.value` with opening `value.opening`. If the proof determined
-   that a valid entry was not found, check that `value` is empty.
+   opens to `SearchValue.value` with opening `SearchValue.opening`. If the proof
+   determined that a valid entry was not found, check that `value` is empty.
 
-Provided that the above verification is successful, users may consume
-`value.value`.
+Provided that the above verification is successful, users decode the encoded
+`UpdateValue` structure in `SearchValue.value`. Depending on the deployment mode
+of the Transparency Log, the `UpdateValue` may or may not require additional
+verification, specified in {{update-format}}, before its contents may be
+consumed.
 
 ## Update
 
@@ -819,21 +862,52 @@ struct {
 
   VRFResult vrf_result;
   SearchProof search;
-  InclusionProof inclusion;
 
   opaque opening<16>;
+  UpdatePrefix prefix;
 } UpdateResult;
 ~~~
 
 Users verify the UpdateResult as if it were a SearchResult for the most recent
 version of `search_key`.
 
+Note that the contents of `UpdateRequest.value` is the new value of the lookup
+key and NOT a serialized `UpdateValue` object. For the purpose of verification,
+the update result provides the `UpdatePrefix` structure necessary to reconstruct
+the `UpdateValue`.
+
 ## Monitor
 
 
-# Third-party Protocols
+# Third Parties
 
 ## Management
+
+With the Third-party Management deployment mode, a third-party is responsible
+for the majority of the work of storing and operating the log, while the service
+operator serves mainly to enforce access control and authenticate the addition
+of new entries to the log. All user queries specified in {{user-operations}} are
+initially sent by users directly to the service operator, and the service
+operator proxies them to the third-party manager if they pass access control.
+
+The service operator only maintains one private key that is kept secret from the
+third-party manager, which is the private key corresponding to
+`Configuration.leaf_public_key`. This private key is used to sign new entries
+before they're added to the log.
+
+As such, all requests and their corresponding responses from {{user-operations}}
+are proxied between the user and the third-party manager unchanged with the
+exception of `UpdateRequest`, which needs to carry the service operator's
+signature over the update:
+
+~~~ tls
+struct {
+  UpdateRequest request;
+  opaque signature<0..2^16-1>;
+} ManagerUpdateRequest;
+~~~
+
+The signature is computed over the `UpdateTBS` structure from {{update-format}}.
 
 ## Auditing
 
