@@ -1060,7 +1060,7 @@ svg :is([fill="white"], [fill^="#fff"]) {
 </tr></thead>
 <tfoot><tr>
 <td class="left">McMillion</td>
-<td class="center">Expires 27 August 2023</td>
+<td class="center">Expires 31 August 2023</td>
 <td class="right">[Page]</td>
 </tr></tfoot>
 </table>
@@ -1073,12 +1073,12 @@ svg :is([fill="white"], [fill^="#fff"]) {
 <dd class="internet-draft">draft-mcmillion-key-transparency-latest</dd>
 <dt class="label-published">Published:</dt>
 <dd class="published">
-<time datetime="2023-02-23" class="published">23 February 2023</time>
+<time datetime="2023-02-27" class="published">27 February 2023</time>
     </dd>
 <dt class="label-intended-status">Intended Status:</dt>
 <dd class="intended-status">Informational</dd>
 <dt class="label-expires">Expires:</dt>
-<dd class="expires"><time datetime="2023-08-27">27 August 2023</time></dd>
+<dd class="expires"><time datetime="2023-08-31">31 August 2023</time></dd>
 <dt class="label-authors">Author:</dt>
 <dd class="authors">
 <div class="author">
@@ -1127,7 +1127,7 @@ tamper-evident logs of security-critical events.<a href="#section-abstract-1" cl
         time. It is inappropriate to use Internet-Drafts as reference
         material or to cite them other than as "work in progress."<a href="#section-boilerplate.1-3" class="pilcrow">¶</a></p>
 <p id="section-boilerplate.1-4">
-        This Internet-Draft will expire on 27 August 2023.<a href="#section-boilerplate.1-4" class="pilcrow">¶</a></p>
+        This Internet-Draft will expire on 31 August 2023.<a href="#section-boilerplate.1-4" class="pilcrow">¶</a></p>
 </section>
 </div>
 <div id="copyright">
@@ -1606,6 +1606,17 @@ which would be entry 67, users would move 4 steps (the largest power of two
 possible) to the right to entry 68. As more entries are added to the log, users
 will consistently revisit entries 64 and 68, while they may never revisit
 entries 35 or 67 after even a single new entry is added to the log.<a href="#section-4.3-5" class="pilcrow">¶</a></p>
+<p id="section-4.3-6">While users searching for a specific version of a key jump right into a binary
+search for the entry with that counter, other users may instead wish to search
+for the "most recent" version of a key. That is, the key with the highest
+counter possible. Users looking up the most recent version of a key start by
+fetching the <strong>frontier</strong> of the log, which they use to determine what the
+highest counter for a key is.<a href="#section-4.3-6" class="pilcrow">¶</a></p>
+<p id="section-4.3-7">The frontier of a log consists of the entry whose index is the largest power of
+two less than the size of the log, followed by the entry the largest power of
+two possible to the right, repeated until the last entry of the log is reached.
+So for example in a log with 70 entries, the frontier consists of entries 64,
+68, and 69 (with 69 being the last entry).<a href="#section-4.3-7" class="pilcrow">¶</a></p>
 </section>
 </div>
 </section>
@@ -1963,8 +1974,9 @@ equals the root value of the prefix tree.<a href="#section-8.2-7" class="pilcrow
         <h3 id="name-combined-tree-2">
 <a href="#section-8.3" class="section-number selfRef">8.3. </a><a href="#name-combined-tree-2" class="section-name selfRef">Combined Tree</a>
         </h3>
-<p id="section-8.3-1">TODO
-- SearchProof<a href="#section-8.3-1" class="pilcrow">¶</a></p>
+<p id="section-8.3-1">A proof from a combined log and prefix tree follows the execution of a binary
+search through the leaves of the log tree, as described in <a href="#combined-tree" class="auto internal xref">Section 4.3</a>. It
+is serialized as follows:<a href="#section-8.3-1" class="pilcrow">¶</a></p>
 <div class="lang-tls sourcecode" id="section-8.3-2">
 <pre>
 struct {
@@ -1974,9 +1986,34 @@ struct {
 
 struct {
   SearchStep steps&lt;0..2^8-1&gt;;
+  InclusionProof inclusion;
 } SearchProof;
 </pre><a href="#section-8.3-2" class="pilcrow">¶</a>
 </div>
+<p id="section-8.3-3">Each <code>SearchStep</code> structure in <code>steps</code> is one leaf that was inspected as part of
+the binary search, starting with the "middle" leaf (i.e., the leaf whose index
+is the largest power of two less than the size of the log). The <code>prefix_proof</code>
+field of a <code>SearchStep</code> is the output of searching the prefix tree whose root is
+at that leaf for the search key, while the <code>commitment</code> field is the commitment
+to the update at that leaf. The <code>inclusion</code> field of <code>SearchProof</code> contains a
+batch inclusion proof for all of the leaves accessed by the binary search,
+relating them to the root of the log tree.<a href="#section-8.3-3" class="pilcrow">¶</a></p>
+<p id="section-8.3-4">A verifier interprets the output of each <code>prefix_proof</code> as <code>-1</code> if it is a
+non-inclusion proof, or as <code>counter</code> if it is an inclusion proof. The proof can
+then be verified by checking that:<a href="#section-8.3-4" class="pilcrow">¶</a></p>
+<ol start="1" type="1" class="normal type-1" id="section-8.3-5">
+<li id="section-8.3-5.1">The elements of <code>steps</code> represent a monotonic series over the leaves of the
+log, and<a href="#section-8.3-5.1" class="pilcrow">¶</a>
+</li>
+          <li id="section-8.3-5.2">The elements of <code>steps</code> correspond exactly to the lookups that would be made
+by the verifier while conducting the binary search.<a href="#section-8.3-5.2" class="pilcrow">¶</a>
+</li>
+        </ol>
+<p id="section-8.3-6">Once the validity of the search steps has been established, the verifier can
+compute the root of each prefix tree represented by a <code>prefix_proof</code> and combine
+it with the corresponding <code>commitment</code> to obtain the value of each leaf. These
+leaf values can then be combined with the proof in <code>inclusion</code> to check that the
+output matches the root of the log tree.<a href="#section-8.3-6" class="pilcrow">¶</a></p>
 </section>
 </div>
 </section>
@@ -2024,7 +2061,6 @@ struct {
 
   VRFResult vrf_result;
   SearchProof search;
-  InclusionProof inclusion;
 
   optional&lt;SearchValue&gt; value;
 } SearchResult;
@@ -2042,20 +2078,16 @@ between the current tree and the tree when it was this size, in the
 </li>
           <li id="section-9.1-7.3">Evaluate the search proof in <code>search</code> according to the steps in
 <a href="#proof-combined-tree" class="auto internal xref">Section 8.3</a>. This will produce a verdict as to whether the search
-was executed correctly, and also produce a series of leaf values for each
-step in the search. If it's determined that the search was executed
-incorrectly, abort with an error.<a href="#section-9.1-7.3" class="pilcrow">¶</a>
+was executed correctly, and also a candidate root value for the tree. If it's
+determined that the search was executed incorrectly, abort with an error.<a href="#section-9.1-7.3" class="pilcrow">¶</a>
 </li>
-          <li id="section-9.1-7.4">Evaluate the inclusion proof in <code>inclusion</code> with the leaf values produced in
-the previous step, to produce the root value of the tree.<a href="#section-9.1-7.4" class="pilcrow">¶</a>
+          <li id="section-9.1-7.4">Verify the signature in <code>tree_head.signature</code> with the calculated root value
+of the tree.<a href="#section-9.1-7.4" class="pilcrow">¶</a>
 </li>
-          <li id="section-9.1-7.5">Verify the signature in <code>tree_head.signature</code> with the calculated root value
-of the tree.<a href="#section-9.1-7.5" class="pilcrow">¶</a>
-</li>
-          <li id="section-9.1-7.6">If the proof in <code>search</code> determined that a valid entry was found, check that
+          <li id="section-9.1-7.5">If the proof in <code>search</code> determined that a valid entry was found, check that
 <code>value</code> is populated, and that the commitment in the terminal search step
 opens to <code>value.value</code> with opening <code>value.opening</code>. If the proof determined
-that a valid entry was not found, check that <code>value</code> is empty.<a href="#section-9.1-7.6" class="pilcrow">¶</a>
+that a valid entry was not found, check that <code>value</code> is empty.<a href="#section-9.1-7.5" class="pilcrow">¶</a>
 </li>
         </ol>
 <p id="section-9.1-8">Provided that the above verification is successful, users may consume
