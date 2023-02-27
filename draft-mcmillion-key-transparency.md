@@ -361,6 +361,19 @@ possible) to the right to entry 68. As more entries are added to the log, users
 will consistently revisit entries 64 and 68, while they may never revisit
 entries 35 or 67 after even a single new entry is added to the log.
 
+While users searching for a specific version of a key jump right into a binary
+search for the entry with that counter, other users may instead wish to search
+for the "most recent" version of a key. That is, the key with the highest
+counter possible. Users looking up the most recent version of a key start by
+fetching the **frontier** of the log, which they use to determine what the
+highest counter for a key is.
+
+The frontier of a log consists of the entry whose index is the largest power of
+two less than the size of the log, followed by the entry the largest power of
+two possible to the right, repeated until the last entry of the log is reached.
+So for example in a log with 70 entries, the frontier consists of entries 64,
+68, and 69 (with 69 being the last entry).
+
 # Preserving Privacy
 
 In addition to being more convenient for many use-cases than similar
@@ -675,8 +688,9 @@ equals the root value of the prefix tree.
 
 ## Combined Tree {#proof-combined-tree}
 
-TODO
-- SearchProof
+A proof from a combined log and prefix tree follows the execution of a binary
+search through the leaves of the log tree, as described in {{combined-tree}}. It
+is serialized as follows:
 
 ~~~ tls
 struct {
@@ -686,8 +700,33 @@ struct {
 
 struct {
   SearchStep steps<0..2^8-1>;
+  InclusionProof inclusion;
 } SearchProof;
 ~~~
+
+Each `SearchStep` structure in `steps` is one leaf that was inspected as part of
+the binary search, starting with the "middle" leaf (i.e., the leaf whose index
+is the largest power of two less than the size of the log). The `prefix_proof`
+field of a `SearchStep` is the output of searching the prefix tree whose root is
+at that leaf for the search key, while the `commitment` field is the commitment
+to the update at that leaf. The `inclusion` field of `SearchProof` contains a
+batch inclusion proof for all of the leaves accessed by the binary search,
+relating them to the root of the log tree.
+
+A verifier interprets the output of each `prefix_proof` as `-1` if it is a
+non-inclusion proof, or as `counter` if it is an inclusion proof. The proof can
+then be verified by checking that:
+
+1. The elements of `steps` represent a monotonic series over the leaves of the
+   log, and
+2. The elements of `steps` correspond exactly to the lookups that would be made
+   by the verifier while conducting the binary search.
+
+Once the validity of the search steps has been established, the verifier can
+compute the root of each prefix tree represented by a `prefix_proof` and combine
+it with the corresponding `commitment` to obtain the value of each leaf. These
+leaf values can then be combined with the proof in `inclusion` to check that the
+output matches the root of the log tree.
 
 
 # User Operations
@@ -727,7 +766,6 @@ struct {
 
   VRFResult vrf_result;
   SearchProof search;
-  InclusionProof inclusion;
 
   optional<SearchValue> value;
 } SearchResult;
@@ -744,14 +782,11 @@ Users verify a search result by following these steps:
    `SearchRequest.search_key` and the claimed VRF output `vrf_result.index`.
 3. Evaluate the search proof in `search` according to the steps in
    {{proof-combined-tree}}. This will produce a verdict as to whether the search
-   was executed correctly, and also produce a series of leaf values for each
-   step in the search. If it's determined that the search was executed
-   incorrectly, abort with an error.
-4. Evaluate the inclusion proof in `inclusion` with the leaf values produced in
-   the previous step, to produce the root value of the tree.
-5. Verify the signature in `tree_head.signature` with the calculated root value
+   was executed correctly, and also a candidate root value for the tree. If it's
+   determined that the search was executed incorrectly, abort with an error.
+4. Verify the signature in `tree_head.signature` with the calculated root value
    of the tree.
-6. If the proof in `search` determined that a valid entry was found, check that
+5. If the proof in `search` determined that a valid entry was found, check that
    `value` is populated, and that the commitment in the terminal search step
    opens to `value.value` with opening `value.opening`. If the proof determined
    that a valid entry was not found, check that `value` is empty.
