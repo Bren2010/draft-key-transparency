@@ -760,13 +760,15 @@ signature from the service operator, using the public key from
 ~~~ tls
 struct {
   opaque search_key<0..2^16-1>;
+  uint32 version;
   opaque value<0..2^32-1>;
 } UpdateTBS;
 ~~~
 
-The `search_key` field contains the search key being updated, while `value`
-contains the same contents as `UpdateValue.value`. Clients MUST successfully
-verify this signature before consuming `UpdateValue.value`.
+The `search_key` field contains the search key being updated, `version` contains
+the new key version, and `value` contains the same contents as
+`UpdateValue.value`. Clients MUST successfully verify this signature before
+consuming `UpdateValue.value`.
 
 
 # User Operations
@@ -791,6 +793,17 @@ In turn, the Transparency Log responds with a SearchResult structure:
 
 ~~~ tls
 struct {
+  TreeHead tree_head;
+  optional<ConsistencyProof> consistency;
+  select (Configuration.mode) {
+    case contactMonitoring:
+    case thirdPartyManagement:
+    case thirdPartyAuditing:
+      AuditorTreeHead auditor_tree_head;
+  };
+} FullTreeHead;
+
+struct {
   opaque index<VRF.Nh>;
   opaque proof<0..2^16-1>;
 } VRFResult;
@@ -801,9 +814,7 @@ struct {
 } SearchValue;
 
 struct {
-  TreeHead tree_head;
-  optional<ConsistencyProof> consistency;
-
+  FullTreeHead full_tree_head;
   VRFResult vrf_result;
   SearchProof search;
 
@@ -813,20 +824,26 @@ struct {
 
 If `last` is present, then the Transparency Log MUST provide a consistency proof
 between the current tree and the tree when it was this size, in the
-`consistency` field.
+`consistency` field of `FullTreeHead`.
 
 Users verify a search result by following these steps:
 
-1. Verify the proof in `consistency`, if one is present.
-2. Verify the VRF proof in `VRFResult.proof` against the requested search key
+1. Verify the VRF proof in `VRFResult.proof` against the requested search key
    `SearchRequest.search_key` and the claimed VRF output `VRFResult.index`.
-3. Evaluate the search proof in `search` according to the steps in
+2. Evaluate the search proof in `search` according to the steps in
    {{proof-combined-tree}}. This will produce a verdict as to whether the search
    was executed correctly, and also a candidate root value for the tree. If it's
    determined that the search was executed incorrectly, abort with an error.
-4. Verify the signature in `TreeHead.signature` with the calculated root value
-   of the tree.
-5. If the proof in `search` determined that a valid entry was found, check that
+3. With the candidate root value for the tree:
+   1. Verify the proof in `FullTreeHead.consistency`, if one is expected.
+   2. Verify the signature in `TreeHead.signature`.
+   3. Verify that the timestamp in `TreeHead` is sufficiently recent.
+      Additionally, verify that either the `TreeHead` is the same as the last
+      one they saw, or that both the `timestamp` and `tree_size` fields are
+      greater than before.
+   4. If third-party auditing is used, verify `auditor_tree_head` with the steps
+      described in {{auditing}}.
+4. If the proof in `search` determined that a valid entry was found, check that
    `value` is populated, and that the commitment in the terminal search step
    opens to `SearchValue.value` with opening `SearchValue.opening`. If the proof
    determined that a valid entry was not found, check that `value` is empty.
@@ -857,9 +874,7 @@ log and returns an UpdateResult structure:
 
 ~~~ tls
 struct {
-  TreeHead tree_head;
-  optional<ConsistencyProof> consistency;
-
+  FullTreeHead full_tree_head;
   VRFResult vrf_result;
   SearchProof search;
 
@@ -877,6 +892,10 @@ the update result provides the `UpdatePrefix` structure necessary to reconstruct
 the `UpdateValue`.
 
 ## Monitor
+
+Applications MUST retain the most recent `TreeHead` they've successfully
+verified as part of a query result, and populate the `last` field of any query
+request with the `tree_size` from this `TreeHead`.
 
 
 # Third Parties
@@ -911,8 +930,81 @@ The signature is computed over the `UpdateTBS` structure from {{update-format}}.
 
 ## Auditing
 
+With the Third-party Auditing deployment mode, the service operator obtains
+signatures from a lightweight third-party auditor attesting to the fact that the
+service operator is constructing the tree correctly. These signatures are
+provided to users along with the results of their queries.
+
+The third-party auditor is expected to run asynchronously, downloading and
+authenticating a log's contents in the background, so as not to become a
+bottleneck for the service operator. This means that the signatures from the
+auditor will usually be somewhat delayed. Applications MUST specify a
+maximum amount of time after which an auditor signature will no longer be
+accepted. It MUST also specify a maximum number of entries that an auditor's
+signature may be behind the most recent `TreeHead` before it will no longer be
+accepted. Failing to verify an auditor's signature in a query MUST result in an
+error that prevent's the query's result from being consumed or accepted by the
+application.
+
+The service operator submits updates to the auditor in batches, in the order
+that they were added to the log tree:
+
+~~~ tls
+struct {
+  opaque index<VRF.Nh>;
+  opaque commitment<Hash.Nh>;
+} AuditorUpdate;
+
+struct {
+  AuditorUpdate updates<0..2^16-1>;
+} AuditorRequest;
+~~~
+
+The `index` field of each `AuditorUpdate` contains the VRF output of the search
+key that was updated and `commitment` contains the service provider's
+commitment to the update. The auditor responds with:
+
+~~~
+struct {
+  TreeHead tree_head;
+} AuditorResponse;
+~~~
+
+The `tree_head` field contains a signature from the auditor's private key,
+corresponding to `Configuration.auditor_public_key`, over the serialized
+`TreeHeadTBS` structure. The `tree_size` field of the `TreeHead` is equal to the
+number of entries processed by the auditor and the `timestamp` field is set to
+the time the signature was produced (in milliseconds since the Unix epoch).
+
+The auditor `TreeHead` from this response is provided to users wrapped in the
+following struct:
+
+~~~ tls
+struct {
+  TreeHead tree_head;
+  opaque root_value<Hash.Nh>;
+  ConsistencyProof consistency;
+} AuditorTreeHead;
+~~~
+
+The `root_value` field contains the root hash of the tree at the point that the
+signature was produced and `consistency` contains a consistency proof between
+the tree at this point and the most recent `TreeHead` provided by the service
+operator.
+
+To check that an `AuditorTreeHead` structure is valid, users follow these steps:
+
+1. Verify the signature in `TreeHead.signature`.
+2. Verify that `TreeHead.timestamp` is sufficiently recent.
+3. Verify that `TreeHead.tree_size` is sufficiently close to the most recent
+   tree head from the service operator.
+4. Verify the consistency proof `consistency` between this tree head and the
+   most recent tree head from the service operator.
+
 
 # Out-of-Band Communication
+
+TODO
 
 
 # Security Considerations
