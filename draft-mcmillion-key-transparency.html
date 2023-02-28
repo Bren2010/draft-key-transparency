@@ -1060,7 +1060,7 @@ svg :is([fill="white"], [fill^="#fff"]) {
 </tr></thead>
 <tfoot><tr>
 <td class="left">McMillion</td>
-<td class="center">Expires 31 August 2023</td>
+<td class="center">Expires 1 September 2023</td>
 <td class="right">[Page]</td>
 </tr></tfoot>
 </table>
@@ -1073,12 +1073,12 @@ svg :is([fill="white"], [fill^="#fff"]) {
 <dd class="internet-draft">draft-mcmillion-key-transparency-latest</dd>
 <dt class="label-published">Published:</dt>
 <dd class="published">
-<time datetime="2023-02-27" class="published">27 February 2023</time>
+<time datetime="2023-02-28" class="published">28 February 2023</time>
     </dd>
 <dt class="label-intended-status">Intended Status:</dt>
 <dd class="intended-status">Informational</dd>
 <dt class="label-expires">Expires:</dt>
-<dd class="expires"><time datetime="2023-08-31">31 August 2023</time></dd>
+<dd class="expires"><time datetime="2023-09-01">1 September 2023</time></dd>
 <dt class="label-authors">Author:</dt>
 <dd class="authors">
 <div class="author">
@@ -1127,7 +1127,7 @@ tamper-evident logs of security-critical events.<a href="#section-abstract-1" cl
         time. It is inappropriate to use Internet-Drafts as reference
         material or to cite them other than as "work in progress."<a href="#section-boilerplate.1-3" class="pilcrow">¶</a></p>
 <p id="section-boilerplate.1-4">
-        This Internet-Draft will expire on 31 August 2023.<a href="#section-boilerplate.1-4" class="pilcrow">¶</a></p>
+        This Internet-Draft will expire on 1 September 2023.<a href="#section-boilerplate.1-4" class="pilcrow">¶</a></p>
 </section>
 </div>
 <div id="copyright">
@@ -2054,13 +2054,15 @@ signature from the service operator, using the public key from
 <pre>
 struct {
   opaque search_key&lt;0..2^16-1&gt;;
+  uint32 version;
   opaque value&lt;0..2^32-1&gt;;
 } UpdateTBS;
 </pre><a href="#section-9-5" class="pilcrow">¶</a>
 </div>
-<p id="section-9-6">The <code>search_key</code> field contains the search key being updated, while <code>value</code>
-contains the same contents as <code>UpdateValue.value</code>. Clients <span class="bcp14">MUST</span> successfully
-verify this signature before consuming <code>UpdateValue.value</code>.<a href="#section-9-6" class="pilcrow">¶</a></p>
+<p id="section-9-6">The <code>search_key</code> field contains the search key being updated, <code>version</code> contains
+the new key version, and <code>value</code> contains the same contents as
+<code>UpdateValue.value</code>. Clients <span class="bcp14">MUST</span> successfully verify this signature before
+consuming <code>UpdateValue.value</code>.<a href="#section-9-6" class="pilcrow">¶</a></p>
 </section>
 </div>
 <div id="user-operations">
@@ -2091,6 +2093,17 @@ struct {
 <div class="lang-tls sourcecode" id="section-10.1-4">
 <pre>
 struct {
+  TreeHead tree_head;
+  optional&lt;ConsistencyProof&gt; consistency;
+  select (Configuration.mode) {
+    case contactMonitoring:
+    case thirdPartyManagement:
+    case thirdPartyAuditing:
+      AuditorTreeHead auditor_tree_head;
+  };
+} FullTreeHead;
+
+struct {
   opaque index&lt;VRF.Nh&gt;;
   opaque proof&lt;0..2^16-1&gt;;
 } VRFResult;
@@ -2101,9 +2114,7 @@ struct {
 } SearchValue;
 
 struct {
-  TreeHead tree_head;
-  optional&lt;ConsistencyProof&gt; consistency;
-
+  FullTreeHead full_tree_head;
   VRFResult vrf_result;
   SearchProof search;
 
@@ -2113,26 +2124,38 @@ struct {
 </div>
 <p id="section-10.1-5">If <code>last</code> is present, then the Transparency Log <span class="bcp14">MUST</span> provide a consistency proof
 between the current tree and the tree when it was this size, in the
-<code>consistency</code> field.<a href="#section-10.1-5" class="pilcrow">¶</a></p>
+<code>consistency</code> field of <code>FullTreeHead</code>.<a href="#section-10.1-5" class="pilcrow">¶</a></p>
 <p id="section-10.1-6">Users verify a search result by following these steps:<a href="#section-10.1-6" class="pilcrow">¶</a></p>
 <ol start="1" type="1" class="normal type-1" id="section-10.1-7">
-<li id="section-10.1-7.1">Verify the proof in <code>consistency</code>, if one is present.<a href="#section-10.1-7.1" class="pilcrow">¶</a>
+<li id="section-10.1-7.1">Verify the VRF proof in <code>VRFResult.proof</code> against the requested search key
+<code>SearchRequest.search_key</code> and the claimed VRF output <code>VRFResult.index</code>.<a href="#section-10.1-7.1" class="pilcrow">¶</a>
 </li>
-          <li id="section-10.1-7.2">Verify the VRF proof in <code>VRFResult.proof</code> against the requested search key
-<code>SearchRequest.search_key</code> and the claimed VRF output <code>VRFResult.index</code>.<a href="#section-10.1-7.2" class="pilcrow">¶</a>
-</li>
-          <li id="section-10.1-7.3">Evaluate the search proof in <code>search</code> according to the steps in
+          <li id="section-10.1-7.2">Evaluate the search proof in <code>search</code> according to the steps in
 <a href="#proof-combined-tree" class="auto internal xref">Section 8.3</a>. This will produce a verdict as to whether the search
 was executed correctly, and also a candidate root value for the tree. If it's
-determined that the search was executed incorrectly, abort with an error.<a href="#section-10.1-7.3" class="pilcrow">¶</a>
+determined that the search was executed incorrectly, abort with an error.<a href="#section-10.1-7.2" class="pilcrow">¶</a>
 </li>
-          <li id="section-10.1-7.4">Verify the signature in <code>TreeHead.signature</code> with the calculated root value
-of the tree.<a href="#section-10.1-7.4" class="pilcrow">¶</a>
+          <li id="section-10.1-7.3">
+            <p id="section-10.1-7.3.1">With the candidate root value for the tree:<a href="#section-10.1-7.3.1" class="pilcrow">¶</a></p>
+<ol start="1" type="1" class="normal type-1" id="section-10.1-7.3.2">
+<li id="section-10.1-7.3.2.1">Verify the proof in <code>FullTreeHead.consistency</code>, if one is expected.<a href="#section-10.1-7.3.2.1" class="pilcrow">¶</a>
 </li>
-          <li id="section-10.1-7.5">If the proof in <code>search</code> determined that a valid entry was found, check that
+              <li id="section-10.1-7.3.2.2">Verify the signature in <code>TreeHead.signature</code>.<a href="#section-10.1-7.3.2.2" class="pilcrow">¶</a>
+</li>
+              <li id="section-10.1-7.3.2.3">Verify that the timestamp in <code>TreeHead</code> is sufficiently recent.
+Additionally, verify that either the <code>TreeHead</code> is the same as the last
+one they saw, or that both the <code>timestamp</code> and <code>tree_size</code> fields are
+greater than before.<a href="#section-10.1-7.3.2.3" class="pilcrow">¶</a>
+</li>
+              <li id="section-10.1-7.3.2.4">If third-party auditing is used, verify <code>auditor_tree_head</code> with the steps
+described in <a href="#auditing" class="auto internal xref">Section 11.2</a>.<a href="#section-10.1-7.3.2.4" class="pilcrow">¶</a>
+</li>
+            </ol>
+</li>
+          <li id="section-10.1-7.4">If the proof in <code>search</code> determined that a valid entry was found, check that
 <code>value</code> is populated, and that the commitment in the terminal search step
 opens to <code>SearchValue.value</code> with opening <code>SearchValue.opening</code>. If the proof
-determined that a valid entry was not found, check that <code>value</code> is empty.<a href="#section-10.1-7.5" class="pilcrow">¶</a>
+determined that a valid entry was not found, check that <code>value</code> is empty.<a href="#section-10.1-7.4" class="pilcrow">¶</a>
 </li>
         </ol>
 <p id="section-10.1-8">Provided that the above verification is successful, users decode the encoded
@@ -2165,9 +2188,7 @@ log and returns an UpdateResult structure:<a href="#section-10.2-3" class="pilcr
 <div class="lang-tls sourcecode" id="section-10.2-4">
 <pre>
 struct {
-  TreeHead tree_head;
-  optional&lt;ConsistencyProof&gt; consistency;
-
+  FullTreeHead full_tree_head;
   VRFResult vrf_result;
   SearchProof search;
 
@@ -2188,7 +2209,10 @@ the <code>UpdateValue</code>.<a href="#section-10.2-6" class="pilcrow">¶</a></p
 <section id="section-10.3">
         <h3 id="name-monitor">
 <a href="#section-10.3" class="section-number selfRef">10.3. </a><a href="#name-monitor" class="section-name selfRef">Monitor</a>
-      </h3>
+        </h3>
+<p id="section-10.3-1">Applications <span class="bcp14">MUST</span> retain the most recent <code>TreeHead</code> they've successfully
+verified as part of a query result, and populate the <code>last</code> field of any query
+request with the <code>tree_size</code> from this <code>TreeHead</code>.<a href="#section-10.3-1" class="pilcrow">¶</a></p>
 </section>
 </div>
 </section>
@@ -2232,7 +2256,78 @@ struct {
 <section id="section-11.2">
         <h3 id="name-auditing">
 <a href="#section-11.2" class="section-number selfRef">11.2. </a><a href="#name-auditing" class="section-name selfRef">Auditing</a>
-      </h3>
+        </h3>
+<p id="section-11.2-1">With the Third-party Auditing deployment mode, the service operator obtains
+signatures from a lightweight third-party auditor attesting to the fact that the
+service operator is constructing the tree correctly. These signatures are
+provided to users along with the results of their queries.<a href="#section-11.2-1" class="pilcrow">¶</a></p>
+<p id="section-11.2-2">The third-party auditor is expected to run asynchronously, downloading and
+authenticating a log's contents in the background, so as not to become a
+bottleneck for the service operator. This means that the signatures from the
+auditor will usually be somewhat delayed. Applications <span class="bcp14">MUST</span> specify a
+maximum amount of time after which an auditor signature will no longer be
+accepted. It <span class="bcp14">MUST</span> also specify a maximum number of entries that an auditor's
+signature may be behind the most recent <code>TreeHead</code> before it will no longer be
+accepted. Failing to verify an auditor's signature in a query <span class="bcp14">MUST</span> result in an
+error that prevent's the query's result from being consumed or accepted by the
+application.<a href="#section-11.2-2" class="pilcrow">¶</a></p>
+<p id="section-11.2-3">The service operator submits updates to the auditor in batches, in the order
+that they were added to the log tree:<a href="#section-11.2-3" class="pilcrow">¶</a></p>
+<div class="lang-tls sourcecode" id="section-11.2-4">
+<pre>
+struct {
+  opaque index&lt;VRF.Nh&gt;;
+  opaque commitment&lt;Hash.Nh&gt;;
+} AuditorUpdate;
+
+struct {
+  AuditorUpdate updates&lt;0..2^16-1&gt;;
+} AuditorRequest;
+</pre><a href="#section-11.2-4" class="pilcrow">¶</a>
+</div>
+<p id="section-11.2-5">The <code>index</code> field of each <code>AuditorUpdate</code> contains the VRF output of the search
+key that was updated and <code>commitment</code> contains the service provider's
+commitment to the update. The auditor responds with:<a href="#section-11.2-5" class="pilcrow">¶</a></p>
+<div class="alignLeft art-text artwork" id="section-11.2-6">
+<pre>
+struct {
+  TreeHead tree_head;
+} AuditorResponse;
+</pre><a href="#section-11.2-6" class="pilcrow">¶</a>
+</div>
+<p id="section-11.2-7">The <code>tree_head</code> field contains a signature from the auditor's private key,
+corresponding to <code>Configuration.auditor_public_key</code>, over the serialized
+<code>TreeHeadTBS</code> structure. The <code>tree_size</code> field of the <code>TreeHead</code> is equal to the
+number of entries processed by the auditor and the <code>timestamp</code> field is set to
+the time the signature was produced (in milliseconds since the Unix epoch).<a href="#section-11.2-7" class="pilcrow">¶</a></p>
+<p id="section-11.2-8">The auditor <code>TreeHead</code> from this response is provided to users wrapped in the
+following struct:<a href="#section-11.2-8" class="pilcrow">¶</a></p>
+<div class="lang-tls sourcecode" id="section-11.2-9">
+<pre>
+struct {
+  TreeHead tree_head;
+  opaque root_value&lt;Hash.Nh&gt;;
+  ConsistencyProof consistency;
+} AuditorTreeHead;
+</pre><a href="#section-11.2-9" class="pilcrow">¶</a>
+</div>
+<p id="section-11.2-10">The <code>root_value</code> field contains the root hash of the tree at the point that the
+signature was produced and <code>consistency</code> contains a consistency proof between
+the tree at this point and the most recent <code>TreeHead</code> provided by the service
+operator.<a href="#section-11.2-10" class="pilcrow">¶</a></p>
+<p id="section-11.2-11">To check that an <code>AuditorTreeHead</code> structure is valid, users follow these steps:<a href="#section-11.2-11" class="pilcrow">¶</a></p>
+<ol start="1" type="1" class="normal type-1" id="section-11.2-12">
+<li id="section-11.2-12.1">Verify the signature in <code>TreeHead.signature</code>.<a href="#section-11.2-12.1" class="pilcrow">¶</a>
+</li>
+          <li id="section-11.2-12.2">Verify that <code>TreeHead.timestamp</code> is sufficiently recent.<a href="#section-11.2-12.2" class="pilcrow">¶</a>
+</li>
+          <li id="section-11.2-12.3">Verify that <code>TreeHead.tree_size</code> is sufficiently close to the most recent
+tree head from the service operator.<a href="#section-11.2-12.3" class="pilcrow">¶</a>
+</li>
+          <li id="section-11.2-12.4">Verify the consistency proof <code>consistency</code> between this tree head and the
+most recent tree head from the service operator.<a href="#section-11.2-12.4" class="pilcrow">¶</a>
+</li>
+        </ol>
 </section>
 </div>
 </section>
@@ -2241,7 +2336,8 @@ struct {
 <section id="section-12">
       <h2 id="name-out-of-band-communication">
 <a href="#section-12" class="section-number selfRef">12. </a><a href="#name-out-of-band-communication" class="section-name selfRef">Out-of-Band Communication</a>
-    </h2>
+      </h2>
+<p id="section-12-1">TODO<a href="#section-12-1" class="pilcrow">¶</a></p>
 </section>
 </div>
 <div id="security-considerations">
