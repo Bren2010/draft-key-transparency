@@ -3,9 +3,9 @@
 
 
 KT Working Group                                            B. McMillion
-Internet-Draft                                          28 February 2023
+Internet-Draft                                              1 March 2023
 Intended status: Informational                                          
-Expires: 1 September 2023
+Expires: 2 September 2023
 
 
                             Key Transparency
@@ -46,7 +46,7 @@ Status of This Memo
    time.  It is inappropriate to use Internet-Drafts as reference
    material or to cite them other than as "work in progress."
 
-   This Internet-Draft will expire on 1 September 2023.
+   This Internet-Draft will expire on 2 September 2023.
 
 Copyright Notice
 
@@ -93,14 +93,15 @@ Table of Contents
    11. Third Parties
      11.1.  Management
      11.2.  Auditing
-   12. Out-of-Band Communication
-   13. Security Considerations
-   14. IANA Considerations
-     14.1.  KT Ciphersuites
-     14.2.  KT Designated Expert Pool
-   15. References
-     15.1.  Normative References
-     15.2.  Informative References
+   12. Owner Signing
+   13. Out-of-Band Communication
+   14. Security Considerations
+   15. IANA Considerations
+     15.1.  KT Ciphersuites
+     15.2.  KT Designated Expert Pool
+   16. References
+     16.1.  Normative References
+     16.2.  Informative References
    Acknowledgments
    Author's Address
 
@@ -540,7 +541,7 @@ Table of Contents
    One of the VRF algorithms from [I-D.irtf-cfrg-vrf] must be used.
 
    Ciphersuites are represented with the CipherSuite type.  The
-   ciphersuites are defined in Section 14.1.
+   ciphersuites are defined in Section 15.1.
 
 7.  Cryptographic Computations
 
@@ -914,9 +915,9 @@ Table of Contents
        2.  Verify the signature in TreeHead.signature.
 
        3.  Verify that the timestamp in TreeHead is sufficiently recent.
-           Additionally, verify that either the TreeHead is the same as
-           the last one they saw, or that both the timestamp and
-           tree_size fields are greater than before.
+           Additionally, verify that the timestamp and tree_size fields
+           of the TreeHead are greater than or equal to what they were
+           before.
 
        4.  If third-party auditing is used, verify auditor_tree_head
            with the steps described in Section 11.2.
@@ -962,9 +963,9 @@ Table of Contents
    most recent version of search_key.
 
    Note that the contents of UpdateRequest.value is the new value of the
-   lookup key and NOT a serialized UpdateValue object.  For the purpose
-   of verification, the update result provides the UpdatePrefix
-   structure necessary to reconstruct the UpdateValue.
+   lookup key and NOT a serialized UpdateValue object.  To aid
+   verification, the update result provides the UpdatePrefix structure
+   necessary to reconstruct the UpdateValue.
 
 10.3.  Monitor
 
@@ -1077,40 +1078,44 @@ Table of Contents
    4.  Verify the consistency proof consistency between this tree head
        and the most recent tree head from the service operator.
 
-12.  Out-of-Band Communication
+12.  Owner Signing
 
    TODO
 
-13.  Security Considerations
+13.  Out-of-Band Communication
 
-   TODO Security
+   TODO
 
-14.  IANA Considerations
+14.  Security Considerations
+
+   TODO
+
+15.  IANA Considerations
 
    This document requests the creation of the following new IANA
    registries:
 
-   *  KT Ciphersuites (Section 14.1)
+   *  KT Ciphersuites (Section 15.1)
 
    All of these registries should be under a heading of "Key
    Transparency", and assignments are made via the Specification
-   Required policy [RFC8126].  See Section 14.2 for additional
+   Required policy [RFC8126].  See Section 15.2 for additional
    information about the KT Designated Experts (DEs).
 
    RFC EDITOR: Please replace XXXX throughout with the RFC number
    assigned to this document
 
-14.1.  KT Ciphersuites
+15.1.  KT Ciphersuites
 
    TODO
 
-14.2.  KT Designated Expert Pool
+15.2.  KT Designated Expert Pool
 
    TODO
 
-15.  References
+16.  References
 
-15.1.  Normative References
+16.1.  Normative References
 
    [I-D.irtf-cfrg-vrf]
               Goldberg, S., Reyzin, L., Papadopoulos, D., and J. Včelák,
@@ -1146,7 +1151,7 @@ Table of Contents
               Version 1.3", RFC 8446, DOI 10.17487/RFC8446, August 2018,
               <https://www.rfc-editor.org/rfc/rfc8446>.
 
-15.2.  Informative References
+16.2.  Informative References
 
    [Merkle2]  Hu, Y., Hooshmand, K., Kalidhindi, H., Yang, S. J., and R.
               A. Popa, "Merkle^2: A Low-Latency Transparency Log
