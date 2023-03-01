@@ -838,9 +838,8 @@ Users verify a search result by following these steps:
    1. Verify the proof in `FullTreeHead.consistency`, if one is expected.
    2. Verify the signature in `TreeHead.signature`.
    3. Verify that the timestamp in `TreeHead` is sufficiently recent.
-      Additionally, verify that either the `TreeHead` is the same as the last
-      one they saw, or that both the `timestamp` and `tree_size` fields are
-      greater than before.
+      Additionally, verify that the `timestamp` and `tree_size` fields of the
+      `TreeHead` are greater than or equal to what they were before.
    4. If third-party auditing is used, verify `auditor_tree_head` with the steps
       described in {{auditing}}.
 4. If the proof in `search` determined that a valid entry was found, check that
@@ -887,9 +886,9 @@ Users verify the UpdateResult as if it were a SearchResult for the most recent
 version of `search_key`.
 
 Note that the contents of `UpdateRequest.value` is the new value of the lookup
-key and NOT a serialized `UpdateValue` object. For the purpose of verification,
-the update result provides the `UpdatePrefix` structure necessary to reconstruct
-the `UpdateValue`.
+key and NOT a serialized `UpdateValue` object. To aid verification, the update
+result provides the `UpdatePrefix` structure necessary to reconstruct the
+`UpdateValue`.
 
 ## Monitor
 
@@ -1002,6 +1001,11 @@ To check that an `AuditorTreeHead` structure is valid, users follow these steps:
    most recent tree head from the service operator.
 
 
+# Owner Signing
+
+TODO
+
+
 # Out-of-Band Communication
 
 TODO
@@ -1009,7 +1013,7 @@ TODO
 
 # Security Considerations
 
-TODO Security
+TODO
 
 
 # IANA Considerations
