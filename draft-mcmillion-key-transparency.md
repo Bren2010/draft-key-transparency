@@ -738,10 +738,8 @@ of the Transparency Log. They are serialized as follows:
 ~~~ tls
 struct {
   select (Configuration.mode) {
-    case contactMonitoring:
     case thirdPartyManagement:
       opaque signature<0..2^16-1>;
-    case thirdPartyAuditing:
   };
 } UpdatePrefix;
 
@@ -796,8 +794,6 @@ struct {
   TreeHead tree_head;
   optional<ConsistencyProof> consistency;
   select (Configuration.mode) {
-    case contactMonitoring:
-    case thirdPartyManagement:
     case thirdPartyAuditing:
       AuditorTreeHead auditor_tree_head;
   };
@@ -1001,14 +997,14 @@ To check that an `AuditorTreeHead` structure is valid, users follow these steps:
    most recent tree head from the service operator.
 
 
-# Owner Signing
+<!-- # Owner Signing
 
 TODO
 
 
 # Out-of-Band Communication
 
-TODO
+TODO -->
 
 
 # Security Considerations
