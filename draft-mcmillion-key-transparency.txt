@@ -93,18 +93,16 @@ Table of Contents
    11. Third Parties
      11.1.  Management
      11.2.  Auditing
-   12. Owner Signing
-   13. Out-of-Band Communication
-   14. Security Considerations
-     14.1.  Contact Monitoring
-     14.2.  Third-party Management
-     14.3.  Third-party Auditing
-   15. IANA Considerations
-     15.1.  KT Ciphersuites
-     15.2.  KT Designated Expert Pool
-   16. References
-     16.1.  Normative References
-     16.2.  Informative References
+   12. Security Considerations
+     12.1.  Contact Monitoring
+     12.2.  Third-party Management
+     12.3.  Third-party Auditing
+   13. IANA Considerations
+     13.1.  KT Ciphersuites
+     13.2.  KT Designated Expert Pool
+   14. References
+     14.1.  Normative References
+     14.2.  Informative References
    Acknowledgments
    Author's Address
 
@@ -544,7 +542,7 @@ Table of Contents
    One of the VRF algorithms from [I-D.irtf-cfrg-vrf] must be used.
 
    Ciphersuites are represented with the CipherSuite type.  The
-   ciphersuites are defined in Section 15.1.
+   ciphersuites are defined in Section 13.1.
 
 7.  Cryptographic Computations
 
@@ -818,10 +816,8 @@ Table of Contents
 
    struct {
      select (Configuration.mode) {
-       case contactMonitoring:
        case thirdPartyManagement:
          opaque signature<0..2^16-1>;
-       case thirdPartyAuditing:
      };
    } UpdatePrefix;
 
@@ -869,8 +865,6 @@ Table of Contents
      TreeHead tree_head;
      optional<ConsistencyProof> consistency;
      select (Configuration.mode) {
-       case contactMonitoring:
-       case thirdPartyManagement:
        case thirdPartyAuditing:
          AuditorTreeHead auditor_tree_head;
      };
@@ -1081,21 +1075,13 @@ Table of Contents
    4.  Verify the consistency proof consistency between this tree head
        and the most recent tree head from the service operator.
 
-12.  Owner Signing
-
-   TODO
-
-13.  Out-of-Band Communication
-
-   TODO
-
-14.  Security Considerations
+12.  Security Considerations
 
    While providing a formal security proof is outside the scope of this
    document, this section attempts to explain the intuition behind the
    security of each deployment mode.
 
-14.1.  Contact Monitoring
+12.1.  Contact Monitoring
 
    Contact Monitoring works by splitting the monitoring burden between
    both the owner of a key and those that look it up.  Stated as simply
@@ -1144,7 +1130,7 @@ Table of Contents
    consumed the fake version of the key will detect this attempt at
    concealment the next time they perform monitoring.
 
-14.2.  Third-party Management
+12.2.  Third-party Management
 
    Third-party Management works by separating the construction of the
    log from the ability to approve which new entries are added to the
@@ -1164,10 +1150,10 @@ Table of Contents
    the collusion of the service operator.  Without access to the service
    operator's signing key, the third-party manager can only attempt to
    selectively conceal the latest version of a key from certain users.
-   However, as discussed in Section 14.1, this is also apparent to the
+   However, as discussed in Section 12.1, this is also apparent to the
    key owner through monitoring.
 
-14.3.  Third-party Auditing
+12.3.  Third-party Auditing
 
    Third-party Auditing works by requiring users to verify a signature
    from a third-party auditor attesting to the fact that the service
@@ -1181,32 +1167,32 @@ Table of Contents
    won't be able to produce any query results that would be accepted by
    users.
 
-15.  IANA Considerations
+13.  IANA Considerations
 
    This document requests the creation of the following new IANA
    registries:
 
-   *  KT Ciphersuites (Section 15.1)
+   *  KT Ciphersuites (Section 13.1)
 
    All of these registries should be under a heading of "Key
    Transparency", and assignments are made via the Specification
-   Required policy [RFC8126].  See Section 15.2 for additional
+   Required policy [RFC8126].  See Section 13.2 for additional
    information about the KT Designated Experts (DEs).
 
    RFC EDITOR: Please replace XXXX throughout with the RFC number
    assigned to this document
 
-15.1.  KT Ciphersuites
+13.1.  KT Ciphersuites
 
    TODO
 
-15.2.  KT Designated Expert Pool
+13.2.  KT Designated Expert Pool
 
    TODO
 
-16.  References
+14.  References
 
-16.1.  Normative References
+14.1.  Normative References
 
    [I-D.irtf-cfrg-vrf]
               Goldberg, S., Reyzin, L., Papadopoulos, D., and J. Včelák,
@@ -1242,7 +1228,7 @@ Table of Contents
               Version 1.3", RFC 8446, DOI 10.17487/RFC8446, August 2018,
               <https://www.rfc-editor.org/rfc/rfc8446>.
 
-16.2.  Informative References
+14.2.  Informative References
 
    [Merkle2]  Hu, Y., Hooshmand, K., Kalidhindi, H., Yang, S. J., and R.
               A. Popa, "Merkle^2: A Low-Latency Transparency Log
