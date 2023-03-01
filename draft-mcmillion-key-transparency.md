@@ -1013,7 +1013,87 @@ TODO
 
 # Security Considerations
 
-TODO
+While providing a formal security proof is outside the scope of this document,
+this section attempts to explain the intuition behind the security of each
+deployment mode.
+
+## Contact Monitoring {#security-contact-monitoring}
+
+Contact Monitoring works by splitting the monitoring burden between both the
+owner of a key and those that look it up. Stated as simply as possible, the
+monitoring obligations of each party are:
+
+1. The key owner, on a regular basis, searches for the most recent version of
+   the key in the log. They verify that this search results in the expected
+   version of the key, at the expected position in the log.
+2. The user that looks up a key, whenever a new parent node is established on
+   the key's direct path, searches for the key in the prefix tree stored in this
+   new parent node. They verify that the version counter returned is greater
+   than or equal to the expected version.
+
+To understand why this is secure, we look at what happens when the service
+operator tampers with the log in different ways.
+
+First, say that the service operator attempts to cover up the latest version of
+a key, with then goal of causing a "most recent version" search for the key to
+resolve in a lower version. To do this, the service operator must add a parent
+node over the latest version of the key with a prefix tree that contains an
+incorrect version counter. Left unchanged, the key owner will observe that the
+most recent version of their key is no longer available the next time they
+perform monitoring. Alternatively, the service operator could add the new
+version of the key back at a later position in the log. But even so, the key
+owner will observe that the key's position has changed the next time they
+perform monitoring. The service operator is unable to restore the latest version
+of the key without violating the log's append-only property or presenting a
+forked view of the log to different users.
+
+Second, say that the service operator attempts to present a fake new version of
+a key, with the goal of causing a "most recent version" search for the key to
+resolve to the fake version. To do this, the service operator can simply add the
+new version of the key as the most recent entry to the log, with the next
+highest version counter. Left unchanged, or if the log continues to be
+constructed correctly, the key owner will observe that a new version of their
+key has been added without their permission the next time they perform
+monitoring. Alternatively, the service operator can add a parent node over the
+fake version with an incorrect version counter to attempt to conceal the
+existence of the fake entry. However, the user that previously consumed the fake
+version of the key will detect this attempt at concealment the next time they
+perform monitoring.
+
+## Third-party Management
+
+Third-party Management works by separating the construction of the log from the
+ability to approve which new entries are added to the log, such that tricking users
+into accepting malicious data requires the collusion of both parties.
+
+The service operator maintains a private key that signs new entries before
+they're added to the log, which means that it has the ability to sign malicious
+new entries and have them successfully published. However, without the collusion
+of the third-party manager to later conceal those entries by constructing the
+tree incorrectly, their existence will be apparent to the key owner the next
+time they perform monitoring.
+
+Similarly, while the third-party manager has the ability to construct the tree
+incorrectly, it cannot add new entries on its own without the collusion of the
+service operator. Without access to the service operator's signing key, the
+third-party manager can only attempt to selectively conceal the latest version
+of a key from certain users. However, as discussed in
+{{security-contact-monitoring}}, this is also apparent to the key owner through
+monitoring.
+
+
+## Third-party Auditing
+
+Third-party Auditing works by requiring users to verify a signature from a
+third-party auditor attesting to the fact that the service operator has been
+constructing the tree correctly.
+
+While the service operator can still construct the tree incorrectly and
+temporarily trick users into accepting malicious data, an honest auditor will no
+longer provide its signatures over the tree at this point. Once there are no
+longer any sufficiently recent auditor tree roots, the log will become
+non-functional as the service operator won't be able to produce any query
+results that would be accepted by users.
 
 
 # IANA Considerations
