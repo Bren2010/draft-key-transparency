@@ -899,7 +899,8 @@ misbehavior.
 
 ## Monitor
 
- Transparency Log containing information about the keys they wish to monitor.
+Users initiate a Monitor operation by submitting a MonitorRequest to the
+Transparency Log containing information about the keys they wish to monitor.
 Similar to Search and Update operations, users can include the `tree_size` of
 the last TreeHead that they successfully verified.
 
