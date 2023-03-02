@@ -925,7 +925,7 @@ struct {
 Users include each of the keys that they own in `search_keys`. If the
 Transparency Log is deployed with Contact Monitoring, users also include any
 keys they've looked up in `contact_keys`, potentially omitting any that they
-reasonably expect will not produce any new monitoring data.
+reasonably expect will not produce new monitoring data.
 
 The Transparency Log responds with a MonitorResponse structure:
 
