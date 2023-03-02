@@ -978,9 +978,11 @@ Table of Contents
 
 10.3.  Monitor
 
-   Transparency Log containing information about the keys they wish to
-   monitor.  Similar to Search and Update operations, users can include
-   the tree_size of the last TreeHead that they successfully verified.
+   Users initiate a Monitor operation by submitting a MonitorRequest to
+   the Transparency Log containing information about the keys they wish
+   to monitor.  Similar to Search and Update operations, users can
+   include the tree_size of the last TreeHead that they successfully
+   verified.
 
    opaque SearchKey<0..2^16-1>;
 
