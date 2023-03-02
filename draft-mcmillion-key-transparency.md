@@ -1148,9 +1148,9 @@ monitoring obligations of each party are:
 1. The key owner, on a regular basis, searches for the most recent version of
    the key in the log. They verify that this search results in the expected
    version of the key, at the expected position in the log.
-2. The user that looks up a key, whenever a new parent node is established on
+2. The user that looks up a key, whenever a new parent is established on
    the key's direct path, searches for the key in the prefix tree stored in this
-   new parent node. They verify that the version counter returned is greater
+   new parent. They verify that the version counter returned is greater
    than or equal to the expected version.
 
 To understand why this is secure, we look at what happens when the service
@@ -1159,7 +1159,7 @@ operator tampers with the log in different ways.
 First, say that the service operator attempts to cover up the latest version of
 a key, with then goal of causing a "most recent version" search for the key to
 resolve in a lower version. To do this, the service operator must add a parent
-node over the latest version of the key with a prefix tree that contains an
+over the latest version of the key with a prefix tree that contains an
 incorrect version counter. Left unchanged, the key owner will observe that the
 most recent version of their key is no longer available the next time they
 perform monitoring. Alternatively, the service operator could add the new
@@ -1176,7 +1176,7 @@ new version of the key as the most recent entry to the log, with the next
 highest version counter. Left unchanged, or if the log continues to be
 constructed correctly, the key owner will observe that a new version of their
 key has been added without their permission the next time they perform
-monitoring. Alternatively, the service operator can add a parent node over the
+monitoring. Alternatively, the service operator can add a parent over the
 fake version with an incorrect version counter to attempt to conceal the
 existence of the fake entry. However, the user that previously consumed the fake
 version of the key will detect this attempt at concealment the next time they
