@@ -849,6 +849,12 @@ of the Transparency Log, the `UpdateValue` may or may not require additional
 verification, specified in {{update-format}}, before its contents may be
 consumed.
 
+If the Transparency Log is deployed with Contact Monitoring, users MUST retain
+the most recent version of the key that they've seen (even if that is not the
+most recent version overall) and the position of that it was stored at in the
+log. Users MAY retain the entire `SearchResult` if they wish to later be able to
+provide non-repudiable proof of misbehavior.
+
 ## Update
 
 Users initiate an Update operation by submitting an UpdateRequest to the
@@ -886,10 +892,130 @@ key and NOT a serialized `UpdateValue` object. To aid verification, the update
 result provides the `UpdatePrefix` structure necessary to reconstruct the
 `UpdateValue`.
 
+Users MUST retain the new version of the key and the position that it is stored
+at in the log for the purpose of monitoring. Users MAY retain the entire
+`UpdateResult` if they wish to later be able to provide non-repudiable proof of
+misbehavior.
+
 ## Monitor
 
-Applications MUST retain the most recent `TreeHead` they've successfully
-verified as part of a query result, and populate the `last` field of any query
+ Transparency Log containing information about the keys they wish to monitor.
+Similar to Search and Update operations, users can include the `tree_size` of
+the last TreeHead that they successfully verified.
+
+~~~ tls
+opaque SearchKey<0..2^16-1>;
+
+struct {
+  opaque search_key<0..2^16-1>;
+  uint32 version;
+} ContactKey;
+
+struct {
+  SearchKey search_keys<0..2^16-1>;
+  select (Configuration.mode) {
+    case contactMonitoring:
+      ContactKey contact_keys<0..2^16-1>;
+  };
+  optional<uint64> last;
+} MonitorRequest;
+~~~
+
+Users include each of the keys that they own in `search_keys`. If the
+Transparency Log is deployed with Contact Monitoring, users also include any
+keys they've looked up in `contact_keys`, potentially omitting any that they
+reasonably expect will not produce any new monitoring data.
+
+The Transparency Log responds with a MonitorResponse structure:
+
+~~~ tls
+struct {
+  PrefixProof prefix_proof;
+  opaque commitment<Hash.Nh>;
+} ContactProofStep;
+
+struct {
+  ContactProofStep steps<0..2^8-1>;
+  InclusionProof inclusion;
+} ContactProof;
+
+struct {
+  FullTreeHead full_tree_head;
+  SearchProof search_proofs<0..2^16-1>;
+  select (Configuration.mode) {
+    case contactMonitoring:
+      ContactProof contact_proofs<0..2^16-1>;
+  };
+} MonitorResponse;
+~~~
+
+Each proof in `search_proofs` represents a search for the most recent version of
+the corresponding key in `search_keys`. If `MonitorRequest.last` is populated,
+any search steps in `SearchProof.steps` for entries of the log before `last` are
+omitted to save space.
+
+The elements of `contact_proofs` also correspond one-to-one with the elements of
+`contact_keys`. Each `ContactProof` is meant to convince the user that the key
+they looked up is still properly included in the log and has not been
+surreptitiously concealed.
+
+The steps of a `ContactProof` represent the **parents** of the entry that
+contain the specified version of the search key. That is, the parents of an
+entry are defined as the log entries that are accessed while following a binary
+search to the given entry, before the entry itself is reached. However, if
+`MonitorRequest.last` is populated, then any parents before `last` are omitted
+to save space.
+
+Each step contains a `prefix_proof`, which follows a search for the
+user-specified key in the prefix tree rooted at that parent, along with the
+`commitment` contained in the parent. Users verify that the `prefix_proof` is an
+inclusion proof and that the included counter is greater than or equal to what
+they'd expect, assuring them that the tree is being constructed correctly. The
+`prefix_proof` combined with the `commitment` allow the user to compute the
+value of each parent's log entry which, combined further with
+`ContactProof.inclusion`, produces the root value of the tree for verification
+against `full_tree_head`.
+
+In full, users verify a monitor response by following these steps:
+
+1. Verify that the length of `search_proofs` is the same as `search_keys`. For
+   each proof in `search_proof`:
+   1. Evaluate the search proof according to the steps in
+      {{proof-combined-tree}}, which will produce a verdict as to whether the
+      search was executed correctly and also a candidate root value for the
+      tree.
+   2. Verify that each search arrives at the expected version of the key, at the
+      expected position in the tree (based on the original Update query).
+2. Ensure that all of the candidate root values are the same. With the candidate
+   root value:
+   1. Verify the proof in `FullTreeHead.consistency`, if one is expected.
+   2. Verify the signature in `TreeHead.signature`.
+   3. Verify that the timestamp in `TreeHead` is sufficiently recent.
+      Additionally, verify that the `timestamp` and `tree_size` fields of the
+      `TreeHead` are greater than or equal to what they were before.
+   4. If third-party auditing is used, verify `auditor_tree_head` with the steps
+      described in {{auditing}}.
+3. If contact monitoring is used, verify that the length of `contact_proofs` is
+   the same as `contact_keys`. For each proof in `contact_proofs`:
+   1. Verify that `steps` has the expected number of entries, based on any new
+      parents that have been created over the entry being monitored.
+   2. For each new parent, which should be in `steps` in the same order that
+      each entry is stored in the log tree, verify that `prefix_proof` is an
+      inclusion proof and that the included version counter is greater than or
+      equal to the most recent version of the key observed by the user.
+   3. Compute the log entry represented by each `ContactProofStep` and evaluate
+      the inclusion proof `inclusion` with these log entries. Verify that the
+      root value outputted is equal to the candidate root value verified in step
+      2.
+
+Some information is omitted from `MonitorResponse` in the interest of
+efficiency, due to the fact that the user would have already seen and verified
+it as part of conducting other queries. In particular, the VRF output and proof
+for each search key is not provided, given that it can be cached from the
+original Search or Update query for the key.
+
+Generally, users MUST retain the most recent `TreeHead` they've successfully
+verified as part of any query result, and populate the `last` field of any query
 request with the `tree_size` from this `TreeHead`.
 
 
