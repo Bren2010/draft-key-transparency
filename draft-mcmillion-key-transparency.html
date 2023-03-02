@@ -1060,7 +1060,7 @@ svg :is([fill="white"], [fill^="#fff"]) {
 </tr></thead>
 <tfoot><tr>
 <td class="left">McMillion</td>
-<td class="center">Expires 2 September 2023</td>
+<td class="center">Expires 3 September 2023</td>
 <td class="right">[Page]</td>
 </tr></tfoot>
 </table>
@@ -1073,12 +1073,12 @@ svg :is([fill="white"], [fill^="#fff"]) {
 <dd class="internet-draft">draft-mcmillion-key-transparency-latest</dd>
 <dt class="label-published">Published:</dt>
 <dd class="published">
-<time datetime="2023-03-01" class="published">1 March 2023</time>
+<time datetime="2023-03-02" class="published">2 March 2023</time>
     </dd>
 <dt class="label-intended-status">Intended Status:</dt>
 <dd class="intended-status">Informational</dd>
 <dt class="label-expires">Expires:</dt>
-<dd class="expires"><time datetime="2023-09-02">2 September 2023</time></dd>
+<dd class="expires"><time datetime="2023-09-03">3 September 2023</time></dd>
 <dt class="label-authors">Author:</dt>
 <dd class="authors">
 <div class="author">
@@ -1127,7 +1127,7 @@ tamper-evident logs of security-critical events.<a href="#section-abstract-1" cl
         time. It is inappropriate to use Internet-Drafts as reference
         material or to cite them other than as "work in progress."<a href="#section-boilerplate.1-3" class="pilcrow">¶</a></p>
 <p id="section-boilerplate.1-4">
-        This Internet-Draft will expire on 2 September 2023.<a href="#section-boilerplate.1-4" class="pilcrow">¶</a></p>
+        This Internet-Draft will expire on 3 September 2023.<a href="#section-boilerplate.1-4" class="pilcrow">¶</a></p>
 </section>
 </div>
 <div id="copyright">
@@ -2166,6 +2166,11 @@ determined that a valid entry was not found, check that <code>value</code> is em
 of the Transparency Log, the <code>UpdateValue</code> may or may not require additional
 verification, specified in <a href="#update-format" class="auto internal xref">Section 9</a>, before its contents may be
 consumed.<a href="#section-10.1-8" class="pilcrow">¶</a></p>
+<p id="section-10.1-9">If the Transparency Log is deployed with Contact Monitoring, users <span class="bcp14">MUST</span> retain
+the most recent version of the key that they've seen (even if that is not the
+most recent version overall) and the position of that it was stored at in the
+log. Users <span class="bcp14">MAY</span> retain the entire <code>SearchResult</code> if they wish to later be able to
+provide non-repudiable proof of misbehavior.<a href="#section-10.1-9" class="pilcrow">¶</a></p>
 </section>
 </div>
 <div id="update">
@@ -2206,6 +2211,10 @@ version of <code>search_key</code>.<a href="#section-10.2-5" class="pilcrow">¶<
 key and NOT a serialized <code>UpdateValue</code> object. To aid verification, the update
 result provides the <code>UpdatePrefix</code> structure necessary to reconstruct the
 <code>UpdateValue</code>.<a href="#section-10.2-6" class="pilcrow">¶</a></p>
+<p id="section-10.2-7">Users <span class="bcp14">MUST</span> retain the new version of the key and the position that it is stored
+at in the log for the purpose of monitoring. Users <span class="bcp14">MAY</span> retain the entire
+<code>UpdateResult</code> if they wish to later be able to provide non-repudiable proof of
+misbehavior.<a href="#section-10.2-7" class="pilcrow">¶</a></p>
 </section>
 </div>
 <div id="monitor">
@@ -2213,9 +2222,139 @@ result provides the <code>UpdatePrefix</code> structure necessary to reconstruct
         <h3 id="name-monitor">
 <a href="#section-10.3" class="section-number selfRef">10.3. </a><a href="#name-monitor" class="section-name selfRef">Monitor</a>
         </h3>
-<p id="section-10.3-1">Applications <span class="bcp14">MUST</span> retain the most recent <code>TreeHead</code> they've successfully
-verified as part of a query result, and populate the <code>last</code> field of any query
-request with the <code>tree_size</code> from this <code>TreeHead</code>.<a href="#section-10.3-1" class="pilcrow">¶</a></p>
+<p id="section-10.3-1">Transparency Log containing information about the keys they wish to monitor.
+Similar to Search and Update operations, users can include the <code>tree_size</code> of
+the last TreeHead that they successfully verified.<a href="#section-10.3-1" class="pilcrow">¶</a></p>
+<div class="lang-tls sourcecode" id="section-10.3-2">
+<pre>
+opaque SearchKey&lt;0..2^16-1&gt;;
+
+struct {
+  opaque search_key&lt;0..2^16-1&gt;;
+  uint32 version;
+} ContactKey;
+
+struct {
+  SearchKey search_keys&lt;0..2^16-1&gt;;
+  select (Configuration.mode) {
+    case contactMonitoring:
+      ContactKey contact_keys&lt;0..2^16-1&gt;;
+  };
+  optional&lt;uint64&gt; last;
+} MonitorRequest;
+</pre><a href="#section-10.3-2" class="pilcrow">¶</a>
+</div>
+<p id="section-10.3-3">Users include each of the keys that they own in <code>search_keys</code>. If the
+Transparency Log is deployed with Contact Monitoring, users also include any
+keys they've looked up in <code>contact_keys</code>, potentially omitting any that they
+reasonably expect will not produce any new monitoring data.<a href="#section-10.3-3" class="pilcrow">¶</a></p>
+<p id="section-10.3-4">The Transparency Log responds with a MonitorResponse structure:<a href="#section-10.3-4" class="pilcrow">¶</a></p>
+<div class="lang-tls sourcecode" id="section-10.3-5">
+<pre>
+struct {
+  PrefixProof prefix_proof;
+  opaque commitment&lt;Hash.Nh&gt;;
+} ContactProofStep;
+
+struct {
+  ContactProofStep steps&lt;0..2^8-1&gt;;
+  InclusionProof inclusion;
+} ContactProof;
+
+struct {
+  FullTreeHead full_tree_head;
+  SearchProof search_proofs&lt;0..2^16-1&gt;;
+  select (Configuration.mode) {
+    case contactMonitoring:
+      ContactProof contact_proofs&lt;0..2^16-1&gt;;
+  };
+} MonitorResponse;
+</pre><a href="#section-10.3-5" class="pilcrow">¶</a>
+</div>
+<p id="section-10.3-6">Each proof in <code>search_proofs</code> represents a search for the most recent version of
+the corresponding key in <code>search_keys</code>. If <code>MonitorRequest.last</code> is populated,
+any search steps in <code>SearchProof.steps</code> for entries of the log before <code>last</code> are
+omitted to save space.<a href="#section-10.3-6" class="pilcrow">¶</a></p>
+<p id="section-10.3-7">The elements of <code>contact_proofs</code> also correspond one-to-one with the elements of
+<code>contact_keys</code>. Each <code>ContactProof</code> is meant to convince the user that the key
+they looked up is still properly included in the log and has not been
+surreptitiously concealed.<a href="#section-10.3-7" class="pilcrow">¶</a></p>
+<p id="section-10.3-8">The steps of a <code>ContactProof</code> represent the <strong>parents</strong> of the entry that
+contain the specified version of the search key. That is, the parents of an
+entry are defined as the log entries that are accessed while following a binary
+search to the given entry, before the entry itself is reached. However, if
+<code>MonitorRequest.last</code> is populated, then any parents before <code>last</code> are omitted
+to save space.<a href="#section-10.3-8" class="pilcrow">¶</a></p>
+<p id="section-10.3-9">Each step contains a <code>prefix_proof</code>, which follows a search for the
+user-specified key in the prefix tree rooted at that parent, along with the
+<code>commitment</code> contained in the parent. Users verify that the <code>prefix_proof</code> is an
+inclusion proof and that the included counter is greater than or equal to what
+they'd expect, assuring them that the tree is being constructed correctly. The
+<code>prefix_proof</code> combined with the <code>commitment</code> allow the user to compute the
+value of each parent's log entry which, combined further with
+<code>ContactProof.inclusion</code>, produces the root value of the tree for verification
+against <code>full_tree_head</code>.<a href="#section-10.3-9" class="pilcrow">¶</a></p>
+<p id="section-10.3-10">In full, users verify a monitor response by following these steps:<a href="#section-10.3-10" class="pilcrow">¶</a></p>
+<ol start="1" type="1" class="normal type-1" id="section-10.3-11">
+<li id="section-10.3-11.1">
+            <p id="section-10.3-11.1.1">Verify that the length of <code>search_proofs</code> is the same as <code>search_keys</code>. For
+each proof in <code>search_proof</code>:<a href="#section-10.3-11.1.1" class="pilcrow">¶</a></p>
+<ol start="1" type="1" class="normal type-1" id="section-10.3-11.1.2">
+<li id="section-10.3-11.1.2.1">Evaluate the search proof according to the steps in
+<a href="#proof-combined-tree" class="auto internal xref">Section 8.3</a>, which will produce a verdict as to whether the
+search was executed correctly and also a candidate root value for the
+tree.<a href="#section-10.3-11.1.2.1" class="pilcrow">¶</a>
+</li>
+              <li id="section-10.3-11.1.2.2">Verify that each search arrives at the expected version of the key, at the
+expected position in the tree (based on the original Update query).<a href="#section-10.3-11.1.2.2" class="pilcrow">¶</a>
+</li>
+            </ol>
+</li>
+          <li id="section-10.3-11.2">
+            <p id="section-10.3-11.2.1">Ensure that all of the candidate root values are the same. With the candidate
+root value:<a href="#section-10.3-11.2.1" class="pilcrow">¶</a></p>
+<ol start="1" type="1" class="normal type-1" id="section-10.3-11.2.2">
+<li id="section-10.3-11.2.2.1">Verify the proof in <code>FullTreeHead.consistency</code>, if one is expected.<a href="#section-10.3-11.2.2.1" class="pilcrow">¶</a>
+</li>
+              <li id="section-10.3-11.2.2.2">Verify the signature in <code>TreeHead.signature</code>.<a href="#section-10.3-11.2.2.2" class="pilcrow">¶</a>
+</li>
+              <li id="section-10.3-11.2.2.3">Verify that the timestamp in <code>TreeHead</code> is sufficiently recent.
+Additionally, verify that the <code>timestamp</code> and <code>tree_size</code> fields of the
+<code>TreeHead</code> are greater than or equal to what they were before.<a href="#section-10.3-11.2.2.3" class="pilcrow">¶</a>
+</li>
+              <li id="section-10.3-11.2.2.4">If third-party auditing is used, verify <code>auditor_tree_head</code> with the steps
+described in <a href="#auditing" class="auto internal xref">Section 11.2</a>.<a href="#section-10.3-11.2.2.4" class="pilcrow">¶</a>
+</li>
+            </ol>
+</li>
+          <li id="section-10.3-11.3">
+            <p id="section-10.3-11.3.1">If contact monitoring is used, verify that the length of <code>contact_proofs</code> is
+the same as <code>contact_keys</code>. For each proof in <code>contact_proofs</code>:<a href="#section-10.3-11.3.1" class="pilcrow">¶</a></p>
+<ol start="1" type="1" class="normal type-1" id="section-10.3-11.3.2">
+<li id="section-10.3-11.3.2.1">Verify that <code>steps</code> has the expected number of entries, based on any new
+parents that have been created over the entry being monitored.<a href="#section-10.3-11.3.2.1" class="pilcrow">¶</a>
+</li>
+              <li id="section-10.3-11.3.2.2">For each new parent, which should be in <code>steps</code> in the same order that
+each entry is stored in the log tree, verify that <code>prefix_proof</code> is an
+inclusion proof and that the included version counter is greater than or
+equal to the most recent version of the key observed by the user.<a href="#section-10.3-11.3.2.2" class="pilcrow">¶</a>
+</li>
+              <li id="section-10.3-11.3.2.3">Compute the log entry represented by each <code>ContactProofStep</code> and evaluate
+the inclusion proof <code>inclusion</code> with these log entries. Verify that the
+root value outputted is equal to the candidate root value verified in step
+2.<a href="#section-10.3-11.3.2.3" class="pilcrow">¶</a>
+</li>
+            </ol>
+</li>
+        </ol>
+<p id="section-10.3-12">Some information is omitted from <code>MonitorResponse</code> in the interest of
+efficiency, due to the fact that the user would have already seen and verified
+it as part of conducting other queries. In particular, the VRF output and proof
+for each search key is not provided, given that it can be cached from the
+original Search or Update query for the key.<a href="#section-10.3-12" class="pilcrow">¶</a></p>
+<p id="section-10.3-13">Generally, users <span class="bcp14">MUST</span> retain the most recent <code>TreeHead</code> they've successfully
+verified as part of any query result, and populate the <code>last</code> field of any query
+request with the <code>tree_size</code> from this <code>TreeHead</code>.<a href="#section-10.3-13" class="pilcrow">¶</a></p>
 </section>
 </div>
 </section>
