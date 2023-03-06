@@ -12,7 +12,7 @@ relatively little attention has been given to securely distributing the end-user
 public keys for such encryption. As a result, these protocols are often still
 vulnerable to eavesdropping by active attackers. Key Transparency is a protocol
 for distributing sensitive cryptographic information, such as public keys, in a
-way that reliably either prevents interference or detects that it occured in a
+way that reliably either prevents interference or detects that it occurred in a
 timely manner. In addition to distributing public keys, it can also be applied
 to ensure that a group of users agree on a shared value or to keep
 tamper-evident logs of security-critical events. 
@@ -1060,7 +1060,7 @@ svg :is([fill="white"], [fill^="#fff"]) {
 </tr></thead>
 <tfoot><tr>
 <td class="left">McMillion</td>
-<td class="center">Expires 3 September 2023</td>
+<td class="center">Expires 7 September 2023</td>
 <td class="right">[Page]</td>
 </tr></tfoot>
 </table>
@@ -1073,12 +1073,12 @@ svg :is([fill="white"], [fill^="#fff"]) {
 <dd class="internet-draft">draft-mcmillion-key-transparency-latest</dd>
 <dt class="label-published">Published:</dt>
 <dd class="published">
-<time datetime="2023-03-02" class="published">2 March 2023</time>
+<time datetime="2023-03-06" class="published">6 March 2023</time>
     </dd>
 <dt class="label-intended-status">Intended Status:</dt>
 <dd class="intended-status">Informational</dd>
 <dt class="label-expires">Expires:</dt>
-<dd class="expires"><time datetime="2023-09-03">3 September 2023</time></dd>
+<dd class="expires"><time datetime="2023-09-07">7 September 2023</time></dd>
 <dt class="label-authors">Author:</dt>
 <dd class="authors">
 <div class="author">
@@ -1095,7 +1095,7 @@ relatively little attention has been given to securely distributing the end-user
 public keys for such encryption. As a result, these protocols are often still
 vulnerable to eavesdropping by active attackers. Key Transparency is a protocol
 for distributing sensitive cryptographic information, such as public keys, in a
-way that reliably either prevents interference or detects that it occured in a
+way that reliably either prevents interference or detects that it occurred in a
 timely manner. In addition to distributing public keys, it can also be applied
 to ensure that a group of users agree on a shared value or to keep
 tamper-evident logs of security-critical events.<a href="#section-abstract-1" class="pilcrow">¶</a></p>
@@ -1127,7 +1127,7 @@ tamper-evident logs of security-critical events.<a href="#section-abstract-1" cl
         time. It is inappropriate to use Internet-Drafts as reference
         material or to cite them other than as "work in progress."<a href="#section-boilerplate.1-3" class="pilcrow">¶</a></p>
 <p id="section-boilerplate.1-4">
-        This Internet-Draft will expire on 3 September 2023.<a href="#section-boilerplate.1-4" class="pilcrow">¶</a></p>
+        This Internet-Draft will expire on 7 September 2023.<a href="#section-boilerplate.1-4" class="pilcrow">¶</a></p>
 </section>
 </div>
 <div id="copyright">
@@ -1309,23 +1309,24 @@ tamper-evident logs of security-critical events.<a href="#section-abstract-1" cl
 <p id="section-1-1">Before any information can be exchanged in an end-to-end encrypted system, two
 things must happen. First, participants in the system must provide to the
 service operator any public keys they wish to use to receive messages. Second,
-the service operator must somehow distribute these public keys to any
-participants that wish to send messages to those users.<a href="#section-1-1" class="pilcrow">¶</a></p>
+the service operator must distribute these public keys to any participants that
+wish to send messages to those users.<a href="#section-1-1" class="pilcrow">¶</a></p>
 <p id="section-1-2">Typically this is done by having users upload their public keys to a simple
 directory where other users can download them as necessary. With this approach,
-the service operator is trusted not to manipulate the directory by inserting
-malicious public keys, which means the underlying encryption protocol can only
-protect users against passive eavesdropping on their messages.<a href="#section-1-2" class="pilcrow">¶</a></p>
+the service operator is trusted to not manipulate the directory by inserting
+malicious public keys, which means that the underlying encryption protocol can
+only protect users against passive eavesdropping on their messages.<a href="#section-1-2" class="pilcrow">¶</a></p>
 <p id="section-1-3">However most messaging systems are designed such that all messages exchanged
-flow through the service operator's servers, so it's extremely easy for an
-operator to launch an active attack. That is, the service operator can insert
-public keys into the directory that they know the private key for, attach those
-public keys to a user's account without the user's knowledge, and then inject
-these keys into active conversations with that user to receive plaintext data.<a href="#section-1-3" class="pilcrow">¶</a></p>
+between users flow through the service operator's servers, so it's extremely
+easy for an operator to launch an active attack. That is, the service operator
+can insert public keys into the directory that they know the private key for,
+attach those public keys to a user's account without the user's knowledge, and
+then inject these keys into active conversations with that user to receive
+plaintext data.<a href="#section-1-3" class="pilcrow">¶</a></p>
 <p id="section-1-4">Key Transparency (KT) solves this problem by requiring the service operator to
 store user public keys in a cryptographically-protected append-only log. Any
-malicious entries added to such a log will generally be equally visible to all
-users, in which case a user can trivially detect that they're being impersonated
+malicious entries added to such a log will generally be visible to all
+users, in which case a user can detect that they're being impersonated
 by viewing the public keys attached to their account. However, if the service
 operator attempts to conceal some entries of the log from some users but not
 others, this creates a "forked view" which is permanent and easily detectable
@@ -1366,7 +1367,7 @@ honestly.<a href="#section-3-1" class="pilcrow">¶</a></p>
 <p id="section-3-2">From an application perspective, KT works as a versioned key-value database.
 Clients insert key-value pairs into the database where, for example, the key is
 their username and the value is their public key. Clients can update a key by
-inserting a new version with new data. They can also lookup the most recent
+inserting a new version with new data. They can also look up the most recent
 version of a key or any past version. From this point forward, "key" will refer
 to a lookup key in a key-value database and "public key" or "private key" will
 be specified if otherwise.<a href="#section-3-2" class="pilcrow">¶</a></p>
@@ -1394,16 +1395,17 @@ can be utilized effectively when or if they're available.<a href="#section-3-5" 
 <p id="section-3.1-1">The operations that can be executed by a client are as follows:<a href="#section-3.1-1" class="pilcrow">¶</a></p>
 <ol start="1" type="1" class="normal type-1" id="section-3.1-2">
 <li id="section-3.1-2.1">
-            <strong>Search:</strong> Looks up a specific key in the most recent version of the log.
-Clients may request either a specific version of the key, or the most recent
-version available. If the key/version exists, the server returns the
-corresponding value and a proof of inclusion. If the key/version does
-not exist, the server returns a proof of non-inclusion instead.<a href="#section-3.1-2.1" class="pilcrow">¶</a>
+            <strong>Search:</strong> Performs a lookup on a specific key in the most recent version of
+the log. Clients may request either a specific version of the key, or the
+most recent version available. If the key-version pair exists, the server
+returns the corresponding value and a proof of inclusion. If the key-version
+pair does not exist, the server returns a proof of non-inclusion instead.<a href="#section-3.1-2.1" class="pilcrow">¶</a>
 </li>
           <li id="section-3.1-2.2">
-            <strong>Update:</strong> Adds a new key-value pair to the log and returns a proof of
-inclusion. Note that this means insertions are completed immediately and are
-not subject to a delay.<a href="#section-3.1-2.2" class="pilcrow">¶</a>
+            <strong>Update:</strong> Adds a new key-value pair to the log, for which the server
+returns a proof of inclusion. Note that this means that new values are added
+to the log immediately in response to an Update operation, and are not queued
+for later insertion with a batch of other values.<a href="#section-3.1-2.2" class="pilcrow">¶</a>
 </li>
           <li id="section-3.1-2.3">
             <strong>Monitor:</strong> While Search and Update are run by the client as necessary,
@@ -1423,24 +1425,23 @@ made to keys owned by the client without the client's knowledge.<a href="#sectio
 different modes for deploying a Transparency Log are described in this document.
 Each mode has slightly different requirements and efficiency considerations for
 both the service operator and the end-user.<a href="#section-3.2-1" class="pilcrow">¶</a></p>
-<p id="section-3.2-2"><strong>Third-party Management</strong> and <strong>Third-party Auditing</strong> are two deployment
-modes that require the service operator to delegate part of the operation of the
-Transparency Log to a third-party. Users are able to run more efficiently
-as long as they can assume that the service operator and the third-party won't
+<p id="section-3.2-2"><strong>Third-party Management</strong> and <strong>Third-party Auditing</strong> are two deployment modes
+that require the service operator to delegate part of the operation of the
+Transparency Log to a third party. Users are able to run more efficiently as
+long as they can assume that the service operator and the third party won't
 collude to trick them into accepting malicious results.<a href="#section-3.2-2" class="pilcrow">¶</a></p>
-<p id="section-3.2-3">With both third-party modes, all requests from end-users are initially
-routed to the service operator and the service operator coordinates with the
-third-party themself. End-users never contact the third-party directly, however
-they will need a signature public key from the third-party to verify the
-third-party's assertions.<a href="#section-3.2-3" class="pilcrow">¶</a></p>
-<p id="section-3.2-4">With Third-party Management, the third-party performs the majority of the work
+<p id="section-3.2-3">With both third-party modes, all requests from end-users are initially routed to
+the service operator and the service operator coordinates with the third party
+themself. End-users never contact the third party directly, however they will
+need a signature public key from the third party to verify it's assertions.<a href="#section-3.2-3" class="pilcrow">¶</a></p>
+<p id="section-3.2-4">With Third-party Management, the third party performs the majority of the work
 of actually storing and operating the log, and the service operator only needs
 to sign new entries as they're added. With Third-party Auditing, the service
 operator performs the majority of the work of storing and operating the log, and
 obtains signatures from a lightweight third-party auditor at regular intervals
 asserting that the service operator has been constructing the tree correctly.<a href="#section-3.2-4" class="pilcrow">¶</a></p>
 <p id="section-3.2-5"><strong>Contact Monitoring</strong>, on the other hand, supports a single-party deployment
-with no third-party. The tradeoff is that the background monitoring protocol
+with no third party. The tradeoff is that the background monitoring protocol
 requires a number of requests that's proportional to the number of keys a user
 has looked up in the past. As such, it's less suited to use-cases where users
 look up a large number of ephemeral keys, but would work ideally in a use-case
@@ -1703,7 +1704,7 @@ cryptographic computations:<a href="#section-6-1" class="pilcrow">¶</a></p>
       </ul>
 <p id="section-6-3">The hash algorithm is used for computing the intermediate and root values of
 hash trees. The signature algorithm is used for signatures from both the service
-operator and the third-party, if one is present. The VRF is used for preserving
+operator and the third party, if one is present. The VRF is used for preserving
 the privacy of lookup keys. One of the VRF algorithms from <span>[<a href="#I-D.irtf-cfrg-vrf" class="cite xref">I-D.irtf-cfrg-vrf</a>]</span> must be used.<a href="#section-6-3" class="pilcrow">¶</a></p>
 <p id="section-6-4">Ciphersuites are represented with the CipherSuite type. The ciphersuites are
 defined in <a href="#kt-ciphersuites" class="auto internal xref">Section 13.1</a>.<a href="#section-6-4" class="pilcrow">¶</a></p>
@@ -2286,7 +2287,7 @@ entry are defined as the log entries that are accessed while following a binary
 search to the given entry, before the entry itself is reached. However, if
 <code>MonitorRequest.last</code> is populated, then any parents before <code>last</code> are omitted
 to save space.<a href="#section-10.3-8" class="pilcrow">¶</a></p>
-<p id="section-10.3-9">Each step contains a <code>prefix_proof</code>, which follows a search for the
+<p id="section-10.3-9">Each step contains a <code>prefix_proof</code> which is a search for the
 user-specified key in the prefix tree rooted at that parent, along with the
 <code>commitment</code> contained in the parent. Users verify that the <code>prefix_proof</code> is an
 inclusion proof and that the included counter is greater than or equal to what
@@ -2370,7 +2371,7 @@ request with the <code>tree_size</code> from this <code>TreeHead</code>.<a href=
         <h3 id="name-management">
 <a href="#section-11.1" class="section-number selfRef">11.1. </a><a href="#name-management" class="section-name selfRef">Management</a>
         </h3>
-<p id="section-11.1-1">With the Third-party Management deployment mode, a third-party is responsible
+<p id="section-11.1-1">With the Third-party Management deployment mode, a third party is responsible
 for the majority of the work of storing and operating the log, while the service
 operator serves mainly to enforce access control and authenticate the addition
 of new entries to the log. All user queries specified in <a href="#user-operations" class="auto internal xref">Section 10</a> are
