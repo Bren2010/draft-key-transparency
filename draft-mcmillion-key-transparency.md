@@ -173,7 +173,7 @@ collude to trick them into accepting malicious results.
 With both third-party modes, all requests from end-users are initially routed to
 the service operator and the service operator coordinates with the third party
 themself. End-users never contact the third party directly, however they will
-need a signature public key from the third party to verify it's assertions.
+need a signature public key from the third party to verify its assertions.
 
 With Third-party Management, the third party performs the majority of the work
 of actually storing and operating the log, and the service operator only needs
@@ -624,7 +624,7 @@ struct {
 Each `NodeValue` is a uniform size, computed by passing the relevent `LogLeaf`
 or `LogParent` structures through the `nodeValue` function in
 {{crypto-log-tree}}. Finally, the contents of the `elements` array is kept in
-left-to-right order: if a node is present in the root's left subtree, it's value
+left-to-right order: if a node is present in the root's left subtree, its value
 must be listed before any values provided from nodes that are in the root's
 right subtree, and so on recursively.
 
