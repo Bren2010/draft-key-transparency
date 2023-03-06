@@ -1410,8 +1410,9 @@ for later insertion with a batch of other values.<a href="#section-3.1-2.2" clas
           <li id="section-3.1-2.3">
             <strong>Monitor:</strong> While Search and Update are run by the client as necessary,
 monitoring is done in the background on a recurring basis. It both checks
-that the log is continuing to behave honestly and that no changes have been
-made to keys owned by the client without the client's knowledge.<a href="#section-3.1-2.3" class="pilcrow">¶</a>
+that the log is continuing to behave honestly (all previously returned keys
+remain in the tree) and that no changes have been made to keys owned by the
+client without the client's knowledge.<a href="#section-3.1-2.3" class="pilcrow">¶</a>
 </li>
         </ol>
 </section>
@@ -1735,8 +1736,10 @@ commitment = HMAC(fixedKey, opening || message)
 d821f8790d97709796b4d7903357c3f5
 </pre><a href="#section-7.1-4" class="pilcrow">¶</a>
 </div>
-<p id="section-7.1-5">The output value <code>commitment</code> may be published, while <code>opening</code> and <code>message</code>
-should be kept private until the commitment is meant to be revealed.<a href="#section-7.1-5" class="pilcrow">¶</a></p>
+<p id="section-7.1-5">This fixed key allows the HMAC function, and thereby the commitment scheme, to
+be modeled as a random oracle.<a href="#section-7.1-5" class="pilcrow">¶</a></p>
+<p id="section-7.1-6">The output value <code>commitment</code> may be published, while <code>opening</code> and <code>message</code>
+should be kept private until the commitment is meant to be revealed.<a href="#section-7.1-6" class="pilcrow">¶</a></p>
 </section>
 </div>
 <div id="prefix-tree-1">
