@@ -154,8 +154,9 @@ The operations that can be executed by a client are as follows:
    for later insertion with a batch of other values.
 3. **Monitor:** While Search and Update are run by the client as necessary,
    monitoring is done in the background on a recurring basis. It both checks
-   that the log is continuing to behave honestly and that no changes have been
-   made to keys owned by the client without the client's knowledge.
+   that the log is continuing to behave honestly (all previously returned keys
+   remain in the tree) and that no changes have been made to keys owned by the
+   client without the client's knowledge.
 
 ## Deployment Modes
 
@@ -468,6 +469,9 @@ where `fixedKey` is the 16 byte hex-decoded value:
 ~~~
 d821f8790d97709796b4d7903357c3f5
 ~~~
+
+This fixed key allows the HMAC function, and thereby the commitment scheme, to
+be modeled as a random oracle.
 
 The output value `commitment` may be published, while `opening` and `message`
 should be kept private until the commitment is meant to be revealed.
