@@ -49,7 +49,7 @@ relatively little attention has been given to securely distributing the end-user
 public keys for such encryption. As a result, these protocols are often still
 vulnerable to eavesdropping by active attackers. Key Transparency is a protocol
 for distributing sensitive cryptographic information, such as public keys, in a
-way that reliably either prevents interference or detects that it occured in a
+way that reliably either prevents interference or detects that it occurred in a
 timely manner. In addition to distributing public keys, it can also be applied
 to ensure that a group of users agree on a shared value or to keep
 tamper-evident logs of security-critical events.
@@ -61,26 +61,27 @@ tamper-evident logs of security-critical events.
 Before any information can be exchanged in an end-to-end encrypted system, two
 things must happen. First, participants in the system must provide to the
 service operator any public keys they wish to use to receive messages. Second,
-the service operator must somehow distribute these public keys to any
-participants that wish to send messages to those users.
+the service operator must distribute these public keys to any participants that
+wish to send messages to those users.
 
 Typically this is done by having users upload their public keys to a simple
 directory where other users can download them as necessary. With this approach,
-the service operator is trusted not to manipulate the directory by inserting
-malicious public keys, which means the underlying encryption protocol can only
-protect users against passive eavesdropping on their messages.
+the service operator is trusted to not manipulate the directory by inserting
+malicious public keys, which means that the underlying encryption protocol can
+only protect users against passive eavesdropping on their messages.
 
 However most messaging systems are designed such that all messages exchanged
-flow through the service operator's servers, so it's extremely easy for an
-operator to launch an active attack. That is, the service operator can insert
-public keys into the directory that they know the private key for, attach those
-public keys to a user's account without the user's knowledge, and then inject
-these keys into active conversations with that user to receive plaintext data.
+between users flow through the service operator's servers, so it's extremely
+easy for an operator to launch an active attack. That is, the service operator
+can insert public keys into the directory that they know the private key for,
+attach those public keys to a user's account without the user's knowledge, and
+then inject these keys into active conversations with that user to receive
+plaintext data.
 
 Key Transparency (KT) solves this problem by requiring the service operator to
 store user public keys in a cryptographically-protected append-only log. Any
-malicious entries added to such a log will generally be equally visible to all
-users, in which case a user can trivially detect that they're being impersonated
+malicious entries added to such a log will generally be visible to all
+users, in which case a user can detect that they're being impersonated
 by viewing the public keys attached to their account. However, if the service
 operator attempts to conceal some entries of the log from some users but not
 others, this creates a "forked view" which is permanent and easily detectable
@@ -114,7 +115,7 @@ honestly.
 From an application perspective, KT works as a versioned key-value database.
 Clients insert key-value pairs into the database where, for example, the key is
 their username and the value is their public key. Clients can update a key by
-inserting a new version with new data. They can also lookup the most recent
+inserting a new version with new data. They can also look up the most recent
 version of a key or any past version. From this point forward, "key" will refer
 to a lookup key in a key-value database and "public key" or "private key" will
 be specified if otherwise.
@@ -142,14 +143,15 @@ can be utilized effectively when or if they're available. <!-- TODO: Link later 
 
 The operations that can be executed by a client are as follows:
 
-1. **Search:** Looks up a specific key in the most recent version of the log.
-   Clients may request either a specific version of the key, or the most recent
-   version available. If the key/version exists, the server returns the
-   corresponding value and a proof of inclusion. If the key/version does
-   not exist, the server returns a proof of non-inclusion instead.
-2. **Update:** Adds a new key-value pair to the log and returns a proof of
-   inclusion. Note that this means insertions are completed immediately and are
-   not subject to a delay.
+1. **Search:** Performs a lookup on a specific key in the most recent version of
+   the log. Clients may request either a specific version of the key, or the
+   most recent version available. If the key-version pair exists, the server
+   returns the corresponding value and a proof of inclusion. If the key-version
+   pair does not exist, the server returns a proof of non-inclusion instead.
+2. **Update:** Adds a new key-value pair to the log, for which the server
+   returns a proof of inclusion. Note that this means that new values are added
+   to the log immediately in response to an Update operation, and are not queued
+   for later insertion with a batch of other values.
 3. **Monitor:** While Search and Update are run by the client as necessary,
    monitoring is done in the background on a recurring basis. It both checks
    that the log is continuing to behave honestly and that no changes have been
@@ -162,19 +164,18 @@ different modes for deploying a Transparency Log are described in this document.
 Each mode has slightly different requirements and efficiency considerations for
 both the service operator and the end-user.
 
-**Third-party Management** and **Third-party Auditing** are two deployment
-modes that require the service operator to delegate part of the operation of the
-Transparency Log to a third-party. Users are able to run more efficiently
-as long as they can assume that the service operator and the third-party won't
+**Third-party Management** and **Third-party Auditing** are two deployment modes
+that require the service operator to delegate part of the operation of the
+Transparency Log to a third party. Users are able to run more efficiently as
+long as they can assume that the service operator and the third party won't
 collude to trick them into accepting malicious results.
 
-With both third-party modes, all requests from end-users are initially
-routed to the service operator and the service operator coordinates with the
-third-party themself. End-users never contact the third-party directly, however
-they will need a signature public key from the third-party to verify the
-third-party's assertions.
+With both third-party modes, all requests from end-users are initially routed to
+the service operator and the service operator coordinates with the third party
+themself. End-users never contact the third party directly, however they will
+need a signature public key from the third party to verify it's assertions.
 
-With Third-party Management, the third-party performs the majority of the work
+With Third-party Management, the third party performs the majority of the work
 of actually storing and operating the log, and the service operator only needs
 to sign new entries as they're added. With Third-party Auditing, the service
 operator performs the majority of the work of storing and operating the log, and
@@ -182,7 +183,7 @@ obtains signatures from a lightweight third-party auditor at regular intervals
 asserting that the service operator has been constructing the tree correctly.
 
 **Contact Monitoring**, on the other hand, supports a single-party deployment
-with no third-party. The tradeoff is that the background monitoring protocol
+with no third party. The tradeoff is that the background monitoring protocol
 requires a number of requests that's proportional to the number of keys a user
 has looked up in the past. As such, it's less suited to use-cases where users
 look up a large number of ephemeral keys, but would work ideally in a use-case
@@ -442,7 +443,7 @@ cryptographic computations:
 
 The hash algorithm is used for computing the intermediate and root values of
 hash trees. The signature algorithm is used for signatures from both the service
-operator and the third-party, if one is present. The VRF is used for preserving
+operator and the third party, if one is present. The VRF is used for preserving
 the privacy of lookup keys. One of the VRF algorithms from {{!I-D.irtf-cfrg-vrf}} must be used.
 
 Ciphersuites are represented with the CipherSuite type. The ciphersuites are
@@ -967,7 +968,7 @@ search to the given entry, before the entry itself is reached. However, if
 `MonitorRequest.last` is populated, then any parents before `last` are omitted
 to save space.
 
-Each step contains a `prefix_proof`, which follows a search for the
+Each step contains a `prefix_proof` which is a search for the
 user-specified key in the prefix tree rooted at that parent, along with the
 `commitment` contained in the parent. Users verify that the `prefix_proof` is an
 inclusion proof and that the included counter is greater than or equal to what
@@ -1024,7 +1025,7 @@ request with the `tree_size` from this `TreeHead`.
 
 ## Management
 
-With the Third-party Management deployment mode, a third-party is responsible
+With the Third-party Management deployment mode, a third party is responsible
 for the majority of the work of storing and operating the log, while the service
 operator serves mainly to enforce access control and authenticate the addition
 of new entries to the log. All user queries specified in {{user-operations}} are
