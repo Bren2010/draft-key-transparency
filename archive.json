@@ -1,6 +1,6 @@
 {
   "magic": "E!vIA5L86J2I",
-  "timestamp": "2023-03-05T00:13:32.436231+00:00",
+  "timestamp": "2023-03-07T00:12:37.857056+00:00",
   "repo": "Bren2010/draft-key-transparency",
   "labels": [
     {
@@ -49,6 +49,119 @@
       "color": "ffffff"
     }
   ],
-  "issues": [],
+  "issues": [
+    {
+      "number": 1,
+      "id": "I_kwDOI2uTjc5f9ugp",
+      "title": "Omitting values that client has already seen in Monitor operations doesn't work correctly",
+      "url": "https://github.com/Bren2010/draft-key-transparency/issues/1",
+      "state": "OPEN",
+      "author": "Bren2010",
+      "authorAssociation": "OWNER",
+      "assignees": [],
+      "labels": [],
+      "body": "I don't think it actually works to base what values can be omitted on the `last` field.",
+      "createdAt": "2023-03-05T01:42:50Z",
+      "updatedAt": "2023-03-05T01:42:50Z",
+      "closedAt": null,
+      "comments": []
+    },
+    {
+      "number": 2,
+      "id": "I_kwDOI2uTjc5f9ujU",
+      "title": "Monitor doesn't correctly handle when a user has been shown multiple new versions of a key between monitoring operations",
+      "url": "https://github.com/Bren2010/draft-key-transparency/issues/2",
+      "state": "OPEN",
+      "author": "Bren2010",
+      "authorAssociation": "OWNER",
+      "assignees": [],
+      "labels": [],
+      "body": "We can't stop monitoring an old version of the key until it's direct path converges with a newer version.",
+      "createdAt": "2023-03-05T01:43:35Z",
+      "updatedAt": "2023-03-05T01:44:11Z",
+      "closedAt": null,
+      "comments": []
+    },
+    {
+      "number": 3,
+      "id": "I_kwDOI2uTjc5f9vCC",
+      "title": "Feedback from Thibault",
+      "url": "https://github.com/Bren2010/draft-key-transparency/issues/3",
+      "state": "OPEN",
+      "author": "Bren2010",
+      "authorAssociation": "OWNER",
+      "assignees": [],
+      "labels": [],
+      "body": "- [ ] Still need to write section on out-of-band checking.\r\n- [ ] When a malicious update gets added, there's no way to tell if the key owner or service operator did it.\r\n- [ ] Would be nice to think about streaming verification. Or at least give real numbers on proof size if streaming is not necessary.",
+      "createdAt": "2023-03-05T01:52:43Z",
+      "updatedAt": "2023-03-05T01:52:43Z",
+      "closedAt": null,
+      "comments": []
+    },
+    {
+      "number": 4,
+      "id": "I_kwDOI2uTjc5gGWP3",
+      "title": "Add worked examples of adding new entries to the combined tree structure",
+      "url": "https://github.com/Bren2010/draft-key-transparency/issues/4",
+      "state": "OPEN",
+      "author": "Bren2010",
+      "authorAssociation": "OWNER",
+      "assignees": [],
+      "labels": [],
+      "body": "",
+      "createdAt": "2023-03-06T22:02:15Z",
+      "updatedAt": "2023-03-06T22:02:15Z",
+      "closedAt": null,
+      "comments": []
+    },
+    {
+      "number": 5,
+      "id": "I_kwDOI2uTjc5gGXWk",
+      "title": "Quantify how quickly contact monitoring detects malicious behavior",
+      "url": "https://github.com/Bren2010/draft-key-transparency/issues/5",
+      "state": "OPEN",
+      "author": "Bren2010",
+      "authorAssociation": "OWNER",
+      "assignees": [],
+      "labels": [],
+      "body": "",
+      "createdAt": "2023-03-06T22:05:59Z",
+      "updatedAt": "2023-03-06T22:05:59Z",
+      "closedAt": null,
+      "comments": []
+    },
+    {
+      "number": 6,
+      "id": "I_kwDOI2uTjc5gGemN",
+      "title": "Ability to switch between or mix-and-match deployment modes",
+      "url": "https://github.com/Bren2010/draft-key-transparency/issues/6",
+      "state": "OPEN",
+      "author": "Bren2010",
+      "authorAssociation": "OWNER",
+      "assignees": [],
+      "labels": [],
+      "body": "Multiple people have flagged that this would be operationally very nice to have, but it would need to be done in a way that preserves the system's security properties.",
+      "createdAt": "2023-03-06T22:26:46Z",
+      "updatedAt": "2023-03-06T22:26:46Z",
+      "closedAt": null,
+      "comments": []
+    },
+    {
+      "number": 7,
+      "id": "I_kwDOI2uTjc5gGmbX",
+      "title": "Discuss hiding the number of stored keys.",
+      "url": "https://github.com/Bren2010/draft-key-transparency/issues/7",
+      "state": "OPEN",
+      "author": "Bren2010",
+      "authorAssociation": "OWNER",
+      "assignees": [],
+      "labels": [],
+      "body": "The number of stored keys in a KT server can be interpreted as the number of users of a service. Many service operators might consider this number very sensitive. Need to think about ways to best obscure it, and write that up.\r\n\r\nOne good option would be multi-tenancy -- that is, having multiple service providers share the same KT log. Maybe could also change the format of prefix tree proofs.",
+      "createdAt": "2023-03-06T22:44:58Z",
+      "updatedAt": "2023-03-06T22:44:58Z",
+      "closedAt": null,
+      "comments": []
+    }
+  ],
   "pulls": []
 }
