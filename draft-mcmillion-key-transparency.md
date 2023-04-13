@@ -184,8 +184,8 @@ obtains signatures from a lightweight third-party auditor at regular intervals
 asserting that the service operator has been constructing the tree correctly.
 
 **Contact Monitoring**, on the other hand, supports a single-party deployment
-with no third party. The tradeoff is that the background monitoring protocol
-requires a number of requests that's proportional to the number of keys a user
+with no third party. The tradeoff is that executing the background monitoring protocol
+requires an amount of work that's proportional to the number of keys a user
 has looked up in the past. As such, it's less suited to use-cases where users
 look up a large number of ephemeral keys, but would work ideally in a use-case
 where users look up a small number of keys repeatedly (for example, the keys of
@@ -194,7 +194,9 @@ regular contacts).
 The deployment mode of a Transparency Log is chosen when the log is first
 created and isn't able to be changed over the log's lifetime. This makes it
 important for operators to carefully consider the best long-term approach based
-on the specifics of their application.
+on the specifics of their application, although migrating from a log operating
+in one deployment mode to another is possible if it becomes necessary
+(see {{combining-multiple-logs}}).
 
 ## Security Guarantees
 
@@ -919,17 +921,15 @@ struct {
 
 struct {
   SearchKey search_keys<0..2^16-1>;
-  select (Configuration.mode) {
-    case contactMonitoring:
-      ContactKey contact_keys<0..2^16-1>;
-  };
+  ContactKey contact_keys<0..2^16-1>;
   optional<uint64> last;
 } MonitorRequest;
 ~~~
 
 Users include each of the keys that they own in `search_keys`. If the
-Transparency Log is deployed with Contact Monitoring, users also include any
-keys they've looked up in `contact_keys`, potentially omitting any that they
+Transparency Log is deployed with Contact Monitoring (or simply if the user
+wants a higher degree of confidence in the log), they also include any keys
+they've looked up in `contact_keys`, potentially omitting any that they
 reasonably expect will not produce new monitoring data.
 
 The Transparency Log responds with a MonitorResponse structure:
@@ -948,10 +948,7 @@ struct {
 struct {
   FullTreeHead full_tree_head;
   SearchProof search_proofs<0..2^16-1>;
-  select (Configuration.mode) {
-    case contactMonitoring:
-      ContactProof contact_proofs<0..2^16-1>;
-  };
+  ContactProof contact_proofs<0..2^16-1>;
 } MonitorResponse;
 ~~~
 
@@ -1137,6 +1134,39 @@ TODO
 # Out-of-Band Communication
 
 TODO -->
+
+# Operational Considerations
+
+## Combining Multiple Logs
+
+There are some cases where it may make sense to operate multiple cooperating log
+instances. For example, a service provider may decide that it's prudent to
+migrate to a new deployment mode. They can do this by creating a new log
+instance operating under the new deployment mode, and gradually migrating their
+data from the old log to the new log while users are able to query both. In
+another case, a service provider may choose to operate multiple logs to improve
+their ability to scale or to provide higher availability. Or more generally, a
+federated system may allow each party in the federation to operate their own
+log for their own users.
+
+When this happens, all users in the system MUST have a consistent policy for
+executing Search, Update, and Monitor queries against the multiple logs that
+maintains the high-level security guarantees of KT:
+
+- If all logs behave honestly, then all users will obtain the same result for
+  the same Search query.
+- If any log behaves dishonestly such that the prior guarantee is not met (some
+  users have obtained different results for different Search queries), this will
+  be detected by monitoring.
+
+In the specific case of migrating from an old log to a new one, this policy may
+look like: 1.) Search queries should be executed against the new log first, and
+then against the older log only if nothing was found, 2.) Update queries should
+only be executed against the new log, and 3.) both logs should be monitored as
+they would be if they were run individually. Even after the data migration has
+completed, the old log SHOULD stay operational long enough for all users to
+complete their monitoring of it (keeping in mind that some users may be offline
+for significant amounts of time).
 
 
 # Security Considerations
