@@ -1021,6 +1021,46 @@ Generally, users MUST retain the most recent `TreeHead` they've successfully
 verified as part of any query result, and populate the `last` field of any query
 request with the `tree_size` from this `TreeHead`.
 
+## Distinguished
+
+Users can request distinguished tree heads by submitting a DistinguishedRequest to
+the Transparency Log containing the approximate timestamp of the tree head
+they'd like to receive.
+
+~~~ tls
+struct {
+  uint64 timestamp;
+  optional<uint64> last;
+} DistinguishedRequest;
+~~~
+
+In turn, the Transparency Log responds with a DistinguishedResponse structure
+containing the `FullTreeHead` with the timestamp closest to what the user
+requested and the root hash of the tree when it was this size.
+
+~~~ tls
+struct {
+  FullTreeHead full_tree_head;
+  opaque root<Hash.Nh>;
+} DistinguishedResponse;
+~~~
+
+If `last` is present, then the Transparency Log MUST provide a consistency proof
+between the provided tree head and the tree when it had `last` entries, in the
+`consistency` field of `FullTreeHead`. Unlike the other operations described in
+this section, where `last` is always less than or equal to the `tree_size` in the provided
+FullTreeHead, a DistinguishedResponse may contain a FullTreeHead which comes
+either before or after `last`.
+
+Users verify a response by following these steps:
+
+1. Verify the proof in `FullTreeHead.consistency`, if one is expected.
+2. Verify the signature in `TreeHead.signature`.
+3. Verify that the `timestamp` and `tree_size` fields of the `TreeHead` are
+   consistent with the previously held `TreeHead`.
+4. If third-party auditing is used, verify `auditor_tree_head` with the steps
+   described in {{auditing}}.
+
 
 # Third Parties
 
@@ -1128,14 +1168,52 @@ To check that an `AuditorTreeHead` structure is valid, users follow these steps:
 
 <!-- # Owner Signing
 
-TODO
-
-
-# Out-of-Band Communication
-
 TODO -->
 
 # Operational Considerations
+
+## Detecting Forks
+
+It is sometimes possible for a Transparency Log to present forked views of data
+to different users. This means that, from an individual user's perspective, a
+log may appear to be operating correctly in the sense that all of a user's
+Monitor queries succeed. However, the Transparency Log has presented a view to
+the user that's not globally consistent with what it's shown other users. As
+such, the log may associate data with certain keys without the key owner's
+awareness.
+
+The protocol is designed such that users remember the last `TreeHead` that they
+observed when querying the log, and require subsequent queries to prove
+consistency against this tree head. As such, users always stay on an
+individually-consistent view of the log. If a user is ever presented with a
+forked view, they will hold on to this forked view forever by requiring all of
+their subsequent queries to be prove consistency with it.
+
+This provides ample opportunity for users to detect when a fork has been
+presented, but isn't in itself sufficient. To detect forks, users must either
+use **out-of-band communication** with other users or **anonymous
+communication** with the Transparency Log.
+
+With out-of-band communication, a user obtains a "distinguished" `TreeHead`,
+perhaps corresponding to the first tree head that was issued that day, by
+sending a `Distinguished` request to the Transparency Log. The user then sends
+the `TreeHead` along with the root hash that it verifies against, to other users
+over some out-of-band communication channel (for example, an in-app screen with
+a QR code / scanner). The other users check that the `TreeHead` verifies
+successfully and matches their own view of the log. If the `TreeHead` verifies
+successfully on its own but doesn't match a user's view of the log, this proves
+the existence of a fork.
+
+With anonymous communication, a user first obtains a "distinguished" `TreeHead`
+by sending a `Distinguished` request to the Transparency Log over their normal
+communication channel. They then send the same `Distinguished` request, omitting
+any identifying information and leaving the `last` field empty, over an
+anonymous channel. If the log responds with a different `TreeHead` over the
+anonymous channel, this proves the existence of a fork.
+
+In the event that a fork is successfully detected, the two signatures on the
+differing views of the log provide non-repudiable proof of log misbehavior which
+can be published.
 
 ## Combining Multiple Logs
 
@@ -1145,7 +1223,7 @@ migrate to a new deployment mode. They can do this by creating a new log
 instance operating under the new deployment mode, and gradually migrating their
 data from the old log to the new log while users are able to query both. In
 another case, a service provider may choose to operate multiple logs to improve
-their ability to scale or to provide higher availability. Or more generally, a
+their ability to scale or to provide higher availability. Similarly, a
 federated system may allow each party in the federation to operate their own
 log for their own users.
 
@@ -1153,11 +1231,11 @@ When this happens, all users in the system MUST have a consistent policy for
 executing Search, Update, and Monitor queries against the multiple logs that
 maintains the high-level security guarantees of KT:
 
-- If all logs behave honestly, then all users will obtain the same result for
-  the same Search query.
+- If all logs behave honestly, then users observe a globally-consistent view of
+  the data associated with each key.
 - If any log behaves dishonestly such that the prior guarantee is not met (some
-  users have obtained different results for different Search queries), this will
-  be detected by monitoring.
+  users observe data associated with a key that others do not), this will be
+  detected either immediately or in a timely manner by background monitoring.
 
 In the specific case of migrating from an old log to a new one, this policy may
 look like: 1.) Search queries should be executed against the new log first, and
