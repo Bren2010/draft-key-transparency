@@ -794,7 +794,7 @@ struct {
 } SearchRequest;
 ~~~
 
-In turn, the Transparency Log responds with a SearchResult structure:
+In turn, the Transparency Log responds with a SearchResponse structure:
 
 ~~~ tls
 struct {
@@ -822,14 +822,14 @@ struct {
   SearchProof search;
 
   optional<SearchValue> value;
-} SearchResult;
+} SearchResponse;
 ~~~
 
 If `last` is present, then the Transparency Log MUST provide a consistency proof
 between the current tree and the tree when it was this size, in the
 `consistency` field of `FullTreeHead`.
 
-Users verify a search result by following these steps:
+Users verify a search response by following these steps:
 
 1. Verify the VRF proof in `VRFResult.proof` against the requested search key
    `SearchRequest.search_key` and the claimed VRF output `VRFResult.index`.
@@ -859,7 +859,7 @@ consumed.
 If the Transparency Log is deployed with Contact Monitoring, users MUST retain
 the most recent version of the key that they've seen (even if that is not the
 most recent version overall) and the position of that it was stored at in the
-log. Users MAY retain the entire `SearchResult` if they wish to later be able to
+log. Users MAY retain the entire `SearchResponse` if they wish to later be able to
 provide non-repudiable proof of misbehavior.
 
 ## Update
@@ -878,7 +878,7 @@ struct {
 ~~~
 
 If the request is valid, the Transparency Log adds the new key-value pair to the
-log and returns an UpdateResult structure:
+log and returns an UpdateResponse structure:
 
 ~~~ tls
 struct {
@@ -888,20 +888,20 @@ struct {
 
   opaque opening<16>;
   UpdatePrefix prefix;
-} UpdateResult;
+} UpdateResponse;
 ~~~
 
-Users verify the UpdateResult as if it were a SearchResult for the most recent
+Users verify the UpdateResponse as if it were a SearchResponse for the most recent
 version of `search_key`.
 
 Note that the contents of `UpdateRequest.value` is the new value of the lookup
 key and NOT a serialized `UpdateValue` object. To aid verification, the update
-result provides the `UpdatePrefix` structure necessary to reconstruct the
+response provides the `UpdatePrefix` structure necessary to reconstruct the
 `UpdateValue`.
 
 Users MUST retain the new version of the key and the position that it is stored
 at in the log for the purpose of monitoring. Users MAY retain the entire
-`UpdateResult` if they wish to later be able to provide non-repudiable proof of
+`UpdateResponse` if they wish to later be able to provide non-repudiable proof of
 misbehavior.
 
 ## Monitor
@@ -1018,7 +1018,7 @@ for each search key is not provided, given that it can be cached from the
 original Search or Update query for the key.
 
 Generally, users MUST retain the most recent `TreeHead` they've successfully
-verified as part of any query result, and populate the `last` field of any query
+verified as part of any query response, and populate the `last` field of any query
 request with the `tree_size` from this `TreeHead`.
 
 ## Distinguished
@@ -1097,7 +1097,7 @@ The signature is computed over the `UpdateTBS` structure from {{update-format}}.
 With the Third-party Auditing deployment mode, the service operator obtains
 signatures from a lightweight third-party auditor attesting to the fact that the
 service operator is constructing the tree correctly. These signatures are
-provided to users along with the results of their queries.
+provided to users along with the responses for their queries.
 
 The third-party auditor is expected to run asynchronously, downloading and
 authenticating a log's contents in the background, so as not to become a
@@ -1107,7 +1107,7 @@ maximum amount of time after which an auditor signature will no longer be
 accepted. It MUST also specify a maximum number of entries that an auditor's
 signature may be behind the most recent `TreeHead` before it will no longer be
 accepted. Failing to verify an auditor's signature in a query MUST result in an
-error that prevent's the query's result from being consumed or accepted by the
+error that prevent's the query's response from being consumed or accepted by the
 application.
 
 The service operator submits updates to the auditor in batches, in the order
@@ -1329,7 +1329,7 @@ temporarily trick users into accepting malicious data, an honest auditor will no
 longer provide its signatures over the tree at this point. Once there are no
 longer any sufficiently recent auditor tree roots, the log will become
 non-functional as the service operator won't be able to produce any query
-results that would be accepted by users.
+responses that would be accepted by users.
 
 
 # IANA Considerations
