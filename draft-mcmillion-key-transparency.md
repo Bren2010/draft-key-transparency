@@ -1023,8 +1023,8 @@ request with the `tree_size` from this `TreeHead`.
 
 ## Distinguished
 
-Users can request distinguished tree heads by submitting a DistinguishedRequest to
-the Transparency Log containing the approximate timestamp of the tree head
+Users can request distinguished tree heads by submitting a DistinguishedRequest
+to the Transparency Log containing the approximate timestamp of the tree head
 they'd like to receive.
 
 ~~~ tls
@@ -1036,7 +1036,7 @@ struct {
 
 In turn, the Transparency Log responds with a DistinguishedResponse structure
 containing the `FullTreeHead` with the timestamp closest to what the user
-requested and the root hash of the tree when it was this size.
+requested and the root hash of the tree at this point.
 
 ~~~ tls
 struct {
@@ -1048,9 +1048,9 @@ struct {
 If `last` is present, then the Transparency Log MUST provide a consistency proof
 between the provided tree head and the tree when it had `last` entries, in the
 `consistency` field of `FullTreeHead`. Unlike the other operations described in
-this section, where `last` is always less than or equal to the `tree_size` in the provided
-FullTreeHead, a DistinguishedResponse may contain a FullTreeHead which comes
-either before or after `last`.
+this section, where `last` is always less than or equal to the `tree_size` in
+the provided FullTreeHead, a DistinguishedResponse may contain a FullTreeHead
+which comes either before or after `last`.
 
 Users verify a response by following these steps:
 
@@ -1177,8 +1177,8 @@ TODO -->
 It is sometimes possible for a Transparency Log to present forked views of data
 to different users. This means that, from an individual user's perspective, a
 log may appear to be operating correctly in the sense that all of a user's
-Monitor queries succeed. However, the Transparency Log has presented a view to
-the user that's not globally consistent with what it's shown other users. As
+Monitor operations succeed. However, the Transparency Log has presented a view
+to the user that's not globally consistent with what it's shown other users. As
 such, the log may associate data with certain keys without the key owner's
 awareness.
 
@@ -1186,23 +1186,23 @@ The protocol is designed such that users remember the last `TreeHead` that they
 observed when querying the log, and require subsequent queries to prove
 consistency against this tree head. As such, users always stay on an
 individually-consistent view of the log. If a user is ever presented with a
-forked view, they will hold on to this forked view forever by requiring all of
-their subsequent queries to be prove consistency with it.
+forked view, they will hold on to this forked view forever and reject the output
+of any subsequent queries that are inconsistent with it.
 
 This provides ample opportunity for users to detect when a fork has been
-presented, but isn't in itself sufficient. To detect forks, users must either
-use **out-of-band communication** with other users or **anonymous
+presented, but isn't in itself sufficient for detection. To detect forks, users
+must either use **out-of-band communication** with other users or **anonymous
 communication** with the Transparency Log.
 
-With out-of-band communication, a user obtains a "distinguished" `TreeHead`,
-perhaps corresponding to the first tree head that was issued that day, by
-sending a `Distinguished` request to the Transparency Log. The user then sends
-the `TreeHead` along with the root hash that it verifies against, to other users
-over some out-of-band communication channel (for example, an in-app screen with
-a QR code / scanner). The other users check that the `TreeHead` verifies
-successfully and matches their own view of the log. If the `TreeHead` verifies
-successfully on its own but doesn't match a user's view of the log, this proves
-the existence of a fork.
+With out-of-band communication, a user obtains a "distinguished" `TreeHead` that
+was issued closest to a given time, like the start of the day, by sending a
+`Distinguished` request to the Transparency Log. The user then sends the
+`TreeHead` along with the root hash that it verifies against to other users over
+some out-of-band communication channel (for example, an in-app screen with a QR
+code / scanner). The other users check that the `TreeHead` verifies successfully
+and matches their own view of the log. If the `TreeHead` verifies successfully
+on its own but doesn't match a user's view of the log, this proves the existence
+of a fork.
 
 With anonymous communication, a user first obtains a "distinguished" `TreeHead`
 by sending a `Distinguished` request to the Transparency Log over their normal
