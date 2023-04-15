@@ -146,8 +146,7 @@ The operations that can be executed by a client are as follows:
 1. **Search:** Performs a lookup on a specific key in the most recent version of
    the log. Clients may request either a specific version of the key, or the
    most recent version available. If the key-version pair exists, the server
-   returns the corresponding value and a proof of inclusion. If the key-version
-   pair does not exist, the server returns a proof of non-inclusion instead.
+   returns the corresponding value and a proof of inclusion.
 2. **Update:** Adds a new key-value pair to the log, for which the server
    returns a proof of inclusion. Note that this means that new values are added
    to the log immediately in response to an Update operation, and are not queued
@@ -226,7 +225,7 @@ underlying cryptographic primitives, but also the deployment mode that the
 Transparency Log relies on:
 
 - Third-Party Management and Third-Party Auditing require an assumption that the
-  Transparency Log operator and the third-party manager/auditor do not collude
+  service operator and the third-party manager/auditor do not collude
   to trick clients into accepting malicious results.
 - Contact Monitoring requires an assumption that the client that owns a key and
   all clients that look up the key do the necessary monitoring afterwards.
@@ -239,7 +238,7 @@ Transparency Log relies on:
 # Tree Construction
 
 KT relies on two combined hash tree structures: log trees and prefix trees. This
-section describes the operation of both at a high-level and the way that they're
+section describes the operation of both at a high level and the way that they're
 combined. More precise algorithms for computing the intermediate and root values
 of the trees will be given in a later section.
 <!-- TODO: Link later section -->
@@ -309,18 +308,24 @@ The root node, in particular, represents the empty string as a prefix. The
 root's left child contains all keys that begin with a 0 bit, while the right
 child contains all keys that begin with a 1 bit.
 
+Every key stored in the tree is required to have the same length in bits, which
+allows every leaf node to exist at the same level of the tree (that is, every
+leaf has a direct path that's the same length). This effectively prevents users
+from being able to infer the total number of key-value pairs stored in the tree.
+
 A prefix tree can be searched by starting at the root node, and moving to the
 left child if the first bit of a search key is 0, or the right child if the
 first bit is 1. This is then repeated for the second bit, third bit, and so on
-until the search either terminates at a leaf node (which may or may not be for
-the desired key), or a parent node that lacks the desired child.
+until the search either terminates at the leaf node for the desired key, or a
+parent node that lacks the desired child.
 
 New key-value pairs are added to the tree by searching it according to this
-process. If the search terminates at a parent without a left or right child, a
-new leaf is simply added as the parent's missing child. If the search terminates
-at a leaf for the wrong key, one or more intermediate nodes are added until the
-new leaf and the old leaf would no longer reside in the same place. That is,
-until we reach the first bit that differs between the new key and the old key.
+process. If the search terminates at a parent without a left or right child, the
+parent's missing child is replaced with a series of intermediate nodes for each
+remaining bit of the search key, followed by a new leaf. If the search
+terminates at the leaf corresponding to the search key (indicating that this
+search key already has a value in the tree), the old leaf value is simply
+replaced with a new one.
 
 The value of a leaf node is the encoded key-value pair, while the value of a
 parent node is the hash of the combined values of its left and right children
@@ -339,31 +344,47 @@ added.
 
 In the combined tree structure, which is based on {{Merkle2}}, a log tree
 maintains a record of updates to key-value pairs while a prefix tree maintains a
-map from each key to a counter with the number of times it's been updated. Importantly, the
-root value of the prefix tree after adding the new key or increasing the counter
-of an existing key, is stored in the log tree alongside the record of the
-update. With some caveats, this combined structure supports both efficient
-consistency proofs and can be efficiently searched.
+map from each key to a pair of integers: a counter with the number of times the
+key has been updated, and the position in the log of the first instance of the
+key. Importantly, the root value of the prefix tree after adding the new key or
+updating the counter/position pair of an existing key, is stored in the log tree
+alongside the record of the update. With some caveats, this combined structure
+supports both efficient consistency proofs and can efficiently authenticate
+searches.
 
-To search the combined structure, users do a binary search for the first log
-entry where looking up the search key in the prefix tree at that entry yields
-the desired counter. As such, the entry that a user arrives at through binary
-search contains the update with the key-value pair that they're looking for,
-even though the log itself is not sorted.
+To search the combined structure, the server first provides the user with the
+position of the first instance of the key in the log. The user then follows a
+binary search for the log entry where looking up the search key in the prefix
+tree at that entry yields the desired version counter. As such, the entry that a
+user arrives at through binary search contains the update with the key-value
+pair that the user is looking for, even though the log itself is not sorted.
 
-Binary search also ensures that all users will check the same or similar entries
-when searching for the same key, which is necessary for the efficient auditing
-of a Transparency Log. To maximize this effect, users start their binary search
-at the entry whose index is the largest power of two less than the size of the
-log, and move left or right by consecutively smaller powers of two.
+Providing the position of the first instance of the key in the log is necessary
+because the prefix tree structure used isn't able to provide proofs of
+non-inclusion (which would leak information about the number of keys stored in
+the prefix tree). Without proofs of non-inclusion, users aren't able to lookup
+the same key in any version of the prefix tree -- only versions of the prefix
+tree that were created after the key was initially added. Because the server
+provides this position, users are able to restrict their binary search to only
+touching log entries where the search key can be successfully looked up in the
+prefix tree.
+
+Following a binary search also ensures that all users will check the same or
+similar entries when searching for the same key, which is necessary for the
+efficient auditing of a Transparency Log. To maximize this effect, users start
+their binary search at the entry whose index is the largest power of two less
+than the size of the log and move left or right by consecutively smaller powers
+of two, skipping entries which are positioned before the initial occurrence of
+the key.
 
 So for example in a log with 70 entries, instead of starting a search at the
-"middle" with entry 35, users would start at entry 64. If the next step in the
-search is to move right, instead of moving to the middle of entries 64 and 70,
-which would be entry 67, users would move 4 steps (the largest power of two
-possible) to the right to entry 68. As more entries are added to the log, users
-will consistently revisit entries 64 and 68, while they may never revisit
-entries 35 or 67 after even a single new entry is added to the log.
+"middle" with entry 35, users would start at entry 64 (provided that the first
+occurence of the key was before entry 64). If the next step in the search is to
+move right, instead of moving to the middle of entries 64 and 70, which would be
+entry 67, users would move 4 steps (the largest power of two possible) to the
+right to entry 68. As more entries are added to the log, users will consistently
+revisit entries 64 and 68, while they may never revisit entries 35 or 67 after
+even a single new entry is added to the log.
 
 While users searching for a specific version of a key jump right into a binary
 search for the entry with that counter, other users may instead wish to search
@@ -392,8 +413,8 @@ even conceal the exact number of users their application has overall.
 
 Applications are primarily able to manage the privacy of their data in KT by
 enforcing access control policies on the basic operations performed by clients,
-as discussed in {{protocol-overview}}. However, the proofs of inclusion and
-non-inclusion given by a Transparency Log can indirectly leak information about
+as discussed in {{protocol-overview}}. However, the proofs
+given by a Transparency Log can indirectly leak information about
 other entries and lookup keys.
 
 When users search for a key with the binary search algorithm described in
@@ -412,7 +433,7 @@ updates, users learn no information about an entry's contents unless the service
 operator explicitly provides the commitment opening.
 
 Beyond the log tree, the second potential source of privacy leaks is the prefix
-tree. When receiving proofs of inclusion and non-inclusion from the prefix tree,
+tree. When receiving proofs of inclusion from the prefix tree,
 users also receive indirect information about what other valid lookup keys
 exist. To prevent this, all lookup keys are processed through a Verifiable
 Random Function, or VRF {{!I-D.irtf-cfrg-vrf}}.
@@ -1346,6 +1367,10 @@ RFC EDITOR: Please replace XXXX throughout with the RFC number assigned to
 this document
 
 ## KT Ciphersuites
+
+~~~tls
+uint16 CipherSuite;
+~~~
 
 TODO
 
