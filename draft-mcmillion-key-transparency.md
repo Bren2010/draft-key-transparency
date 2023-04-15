@@ -733,8 +733,10 @@ the binary search, relating them to the root of the log tree.
 
 The proof can be verified by checking that:
 
-1. The elements of `steps` represent a monotonic series over the leaves of the log, and
-2. The `steps` array has the expected number of entries (no more or less than are necessary to execute the binary search).
+1. The elements of `steps` represent a monotonic series over the leaves of the
+   log, and
+2. The `steps` array has the expected number of entries (no more or less than
+   are necessary to execute the binary search).
 
 Once the validity of the search steps has been established, the verifier can
 compute the root of each prefix tree represented by a `prefix_proof` and combine
@@ -819,16 +821,12 @@ struct {
 } VRFResult;
 
 struct {
-  opaque opening<16>;
-  opaque value<0..2^32-1>;
-} SearchValue;
-
-struct {
   FullTreeHead full_tree_head;
   VRFResult vrf_result;
   SearchProof search;
 
-  optional<SearchValue> value;
+  opaque opening<16>;
+  opaque value<0..2^32-1>;
 } SearchResponse;
 ~~~
 
@@ -844,7 +842,11 @@ Users verify a search response by following these steps:
    {{proof-combined-tree}}. This will produce a verdict as to whether the search
    was executed correctly, and also a candidate root value for the tree. If it's
    determined that the search was executed incorrectly, abort with an error.
-3. With the candidate root value for the tree:
+3. If the user has monitoring information for this search key (because they own
+   it or are performing Contact Monitoring), verify that `SearchProof.position`
+   is the same as in previous requests, and that the entry's version and
+   position in the log are consistent with other known versions.
+4. With the candidate root value for the tree:
    1. Verify the proof in `FullTreeHead.consistency`, if one is expected.
    2. Verify the signature in `TreeHead.signature`.
    3. Verify that the timestamp in `TreeHead` is sufficiently recent.
@@ -852,10 +854,8 @@ Users verify a search response by following these steps:
       `TreeHead` are greater than or equal to what they were before.
    4. If third-party auditing is used, verify `auditor_tree_head` with the steps
       described in {{auditing}}.
-4. If the proof in `search` determined that a valid entry was found, check that
-   `value` is populated, and that the commitment in the terminal search step
-   opens to `SearchValue.value` with opening `SearchValue.opening`. If the proof
-   determined that a valid entry was not found, check that `value` is empty.
+5. Verify that the commitment in the terminal search step opens to
+   `SearchValue.value` with opening `SearchValue.opening`.
 
 Provided that the above verification is successful, users decode the encoded
 `UpdateValue` structure in `SearchValue.value`. Depending on the deployment mode
@@ -863,11 +863,15 @@ of the Transparency Log, the `UpdateValue` may or may not require additional
 verification, specified in {{update-format}}, before its contents may be
 consumed.
 
-If the Transparency Log is deployed with Contact Monitoring, users MUST retain
-the most recent version of the key that they've seen (even if that is not the
-most recent version overall) and the position of that it was stored at in the
-log. Users MAY retain the entire `SearchResponse` if they wish to later be able to
-provide non-repudiable proof of misbehavior.
+To be able to later perform monitoring, users retain the claimed position of the
+key's first occurence in the log, `SearchProof.position`. They also retain, for
+each version of the key observed, the version number and its position in the
+log. Users MUST retain this information if the Transparency Log's deployment
+mode is Contact Monitoring, and they SHOULD retain the entire `SearchResponse`
+structure to assist with debugging or to provide non-repudiable proof if
+misbehavior is detected. If one of the third-party modes is being used, users
+MAY retain this information to perform Contact Monitoring even though it is not
+required.
 
 ## Update
 
@@ -884,8 +888,8 @@ struct {
 } UpdateRequest;
 ~~~
 
-If the request is valid, the Transparency Log adds the new key-value pair to the
-log and returns an UpdateResponse structure:
+If the request is acceptable by application-layer policies, the Transparency Log
+adds the new key-value pair to the log and returns an UpdateResponse structure:
 
 ~~~ tls
 struct {
@@ -898,18 +902,17 @@ struct {
 } UpdateResponse;
 ~~~
 
-Users verify the UpdateResponse as if it were a SearchResponse for the most recent
-version of `search_key`.
+Users verify the UpdateResponse as if it were a SearchResponse for the most
+recent version of `search_key`, and they also check that their update is the
+last entry in the log.
 
 Note that the contents of `UpdateRequest.value` is the new value of the lookup
 key and NOT a serialized `UpdateValue` object. To aid verification, the update
 response provides the `UpdatePrefix` structure necessary to reconstruct the
 `UpdateValue`.
 
-Users MUST retain the new version of the key and the position that it is stored
-at in the log for the purpose of monitoring. Users MAY retain the entire
-`UpdateResponse` if they wish to later be able to provide non-repudiable proof of
-misbehavior.
+Users MUST retain the information required to perform monitoring as described in
+{{search}}.
 
 ## Monitor
 
