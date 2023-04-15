@@ -507,12 +507,14 @@ The leaf nodes of a prefix tree are serialized as:
 struct {
     opaque key<VRF.Nh>;
     uint32 counter;
+    uint64 position;
 } PrefixLeaf;
 ~~~
 
 where `key` is the full search key, `counter` is the counter of times that the
-key has been updated (starting at 0 for a key that was just created), and
-`VRF.Nh` is the output size of the ciphersuite VRF in bytes.
+key has been updated (starting at 0 for a key that was just created), `position`
+is the position in the log of the first occurence of this key, and `VRF.Nh` is
+the output size of the ciphersuite VRF in bytes.
 
 The parent nodes of a prefix tree are serialized as:
 
@@ -533,14 +535,16 @@ parent.value = Hash(0x01 ||
 
 nodeValue(node):
   if node.type == emptyNode:
-    return make([]byte, Hash.Nh)
+    return random(Hash.Nh) // random string of Hash.Nh bytes
   else if node.type == leafNode:
-    return Hash(0x00 || node.key || node.counter)
+    return Hash(0x00 || node.key || node.counter || node.position)
   else if node.type == parentNode:
     return node.value
 ~~~
 
-where `Hash` denotes the ciphersuite hash function.
+where `Hash` denotes the ciphersuite hash function. Whenever a parent's left or
+right child is missing, a random value is chosen to represent the child's node
+value.
 
 ## Log Tree {#crypto-log-tree}
 
@@ -574,7 +578,7 @@ nodeValue(node):
   if node.type == leafNode:
     return Hash(node.commitment || node.prefix_tree)
   else if node.type == parentNode:
-    return parent.value
+    return node.value
 ~~~
 
 ## Tree Head Signature
@@ -591,7 +595,7 @@ struct {
 ~~~
 
 where `tree_size` counts the number of entries in the log tree and `timestamp`
-is the time that the structure was generated, in milliseconds since the Unix
+is the time that the structure was generated in milliseconds since the Unix
 epoch. If the Transparency Log is deployed with Third-party Management then the
 public key used to verify the signature belongs to the third-party manager;
 otherwise the public key used belongs to the service operator.
@@ -605,6 +609,7 @@ enum {
   contactMonitoring(1),
   thirdPartyManagement(2),
   thirdPartyAuditing(3),
+  (255)
 } DeploymentMode;
 
 struct {
@@ -648,7 +653,7 @@ struct {
 } InclusionProof;
 ~~~
 
-Each `NodeValue` is a uniform size, computed by passing the relevent `LogLeaf`
+Each `NodeValue` is a uniform size, computed by passing the relevant `LogLeaf`
 or `LogParent` structures through the `nodeValue` function in
 {{crypto-log-tree}}. Finally, the contents of the `elements` array is kept in
 left-to-right order: if a node is present in the root's left subtree, its value
@@ -665,7 +670,7 @@ struct {
 
 Again, each `NodeValue` is computed by passing the relevent `LogLeaf` or
 `LogParent` structure through the `nodeValue` function. The nodes chosen
-correspond to those output by the algorithm in section 2.1.2 of {{RFC6962}}.
+correspond to those output by the algorithm in Section 2.1.2 of {{RFC6962}}.
 
 ## Prefix Tree
 
@@ -673,46 +678,24 @@ A proof from a prefix tree authenticates that a search was done correctly for a
 given search key. Such a proof is encoded as:
 
 ~~~ tls
-enum {
-  reserved(0),
-  inclusion(1),
-  nonInclusionLeaf(2),
-  nonInclusionParent(3),
-} PrefixSearchResult;
-
 struct {
-  PrefixSearchResult result;
   NodeValue elements<0..2^16-1>;
-  select (PrefixProof.result) {
-    case inclusion:
-      uint32 counter;
-    case nonInclusionLeaf:
-      PrefixLeaf leaf;
-    case nonInclusionParent:
-  };
+  uint32 counter;
 } PrefixProof;
 ~~~
 
-The `result` field indicates what the terminal node of the search was:
-
-- `inclusion` for a leaf node matching the requested key
-- `nonInclusionLeaf` for a leaf node not matching the requested key
-- `nonInclusionParent` for a parent node that lacks the desired child
-
-The `elements` array consists of the copath of the terminal node, in
-bottom-to-top order. That is, the terminal node's sibling would be first,
-followed by the terminal node's parent's sibling, and so on. In the event that a
-node is not present, an all-zero byte string of length `Hash.Nh` is listed
-instead.
-
-Depending on the `result` field, any additional information about the terminal
-node that's necessary to verify the proof is also provided. In the case of
-`nonInclusionParent`, no additional information is needed because the
-non-terminal child's value is already in `elements`.
+The `elements` array consists of the copath of the leaf node, in bottom-to-top
+order. That is, the leaf's sibling would be first, followed by the leaf's
+parent's sibling, and so on. In the event that a node is not present, then the
+random value generated when computing the parent's value is provided instead.
 
 The proof is verified by hashing together the provided elements, in the
 left/right arrangement dictated by the search key, and checking that the result
 equals the root value of the prefix tree.
+
+The `position` field of the `PrefixLeaf` structure isn't provided in
+`PrefixProof` to save space, as this value is expected to be the same across
+several proofs.
 
 ## Combined Tree {#proof-combined-tree}
 
@@ -727,28 +710,31 @@ struct {
 } SearchStep;
 
 struct {
+  uint64 position;
   SearchStep steps<0..2^8-1>;
   InclusionProof inclusion;
 } SearchProof;
 ~~~
 
 Each `SearchStep` structure in `steps` is one leaf that was inspected as part of
-the binary search, starting with the "middle" leaf (i.e., the leaf whose index
-is the largest power of two less than the size of the log). The `prefix_proof`
-field of a `SearchStep` is the output of searching the prefix tree whose root is
-at that leaf for the search key, while the `commitment` field is the commitment
-to the update at that leaf. The `inclusion` field of `SearchProof` contains a
-batch inclusion proof for all of the leaves accessed by the binary search,
-relating them to the root of the log tree.
+the binary search. The steps of the binary search are determined by starting
+with the "middle" leaf (i.e., the leaf whose index is the largest power of two
+less than the size of the log), and incrementally moving the largest power of
+two possible to the right until a node is reached whose position is greater than
+or equal to `position`. This represents the first node which is touched by the
+search. From there, the user moves incrementally smaller powers of two left or
+right, based on the version counter found in each previous step.
 
-A verifier interprets the output of each `prefix_proof` as `-1` if it is a
-non-inclusion proof, or as `counter` if it is an inclusion proof. The proof can
-then be verified by checking that:
+The `prefix_proof` field of a `SearchStep` is the output of searching the prefix
+tree whose root is at that leaf for the search key, while the `commitment` field
+is the commitment to the update at that leaf. The `inclusion` field of
+`SearchProof` contains a batch inclusion proof for all of the leaves accessed by
+the binary search, relating them to the root of the log tree.
 
-1. The elements of `steps` represent a monotonic series over the leaves of the
-   log, and
-2. The elements of `steps` correspond exactly to the lookups that would be made
-   by the verifier while conducting the binary search.
+The proof can be verified by checking that:
+
+1. The elements of `steps` represent a monotonic series over the leaves of the log, and
+2. The `steps` array has the expected number of entries (no more or less than are necessary to execute the binary search).
 
 Once the validity of the search steps has been established, the verifier can
 compute the root of each prefix tree represented by a `prefix_proof` and combine
@@ -791,10 +777,10 @@ struct {
 } UpdateTBS;
 ~~~
 
-The `search_key` field contains the search key being updated, `version` contains
-the new key version, and `value` contains the same contents as
-`UpdateValue.value`. Clients MUST successfully verify this signature before
-consuming `UpdateValue.value`.
+The `search_key` field contains the search key being updated (the search key
+provided by the user, not the VRF output), `version` contains the new key
+version, and `value` contains the same contents as `UpdateValue.value`. Clients
+MUST successfully verify this signature before consuming `UpdateValue.value`.
 
 
 # User Operations
