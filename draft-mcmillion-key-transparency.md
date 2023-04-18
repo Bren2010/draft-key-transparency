@@ -240,8 +240,7 @@ Transparency Log relies on:
 KT relies on two combined hash tree structures: log trees and prefix trees. This
 section describes the operation of both at a high level and the way that they're
 combined. More precise algorithms for computing the intermediate and root values
-of the trees will be given in a later section.
-<!-- TODO: Link later section -->
+of the trees are given in {{cryptographic-computations}}.
 
 Both types of trees consist of *nodes* which have a byte string as their *value*.
 A node is either a *leaf* if it has no children, or a *parent* if it has either
@@ -364,10 +363,10 @@ because the prefix tree structure used isn't able to provide proofs of
 non-inclusion (which would leak information about the number of keys stored in
 the prefix tree). Without proofs of non-inclusion, users aren't able to lookup
 the same key in any version of the prefix tree -- only versions of the prefix
-tree that were created after the key was initially added. Because the server
-provides this position, users are able to restrict their binary search to only
-touching log entries where the search key can be successfully looked up in the
-prefix tree.
+tree that were created after the key was initially added to the log. Because the
+server provides this position, users are able to restrict their binary search to
+only touching log entries where the search key can be successfully looked up in
+the prefix tree.
 
 Following a binary search also ensures that all users will check the same or
 similar entries when searching for the same key, which is necessary for the
@@ -379,7 +378,7 @@ the key.
 
 So for example in a log with 70 entries, instead of starting a search at the
 "middle" with entry 35, users would start at entry 64 (provided that the first
-occurence of the key was before entry 64). If the next step in the search is to
+occurrence of the key was before entry 64). If the next step in the search is to
 move right, instead of moving to the middle of entries 64 and 70, which would be
 entry 67, users would move 4 steps (the largest power of two possible) to the
 right to entry 68. As more entries are added to the log, users will consistently
@@ -513,7 +512,7 @@ struct {
 
 where `key` is the full search key, `counter` is the counter of times that the
 key has been updated (starting at 0 for a key that was just created), `position`
-is the position in the log of the first occurence of this key, and `VRF.Nh` is
+is the position in the log of the first occurrence of this key, and `VRF.Nh` is
 the output size of the ciphersuite VRF in bytes.
 
 The parent nodes of a prefix tree are serialized as:
@@ -668,7 +667,7 @@ struct {
 } ConsistencyProof;
 ~~~
 
-Again, each `NodeValue` is computed by passing the relevent `LogLeaf` or
+Again, each `NodeValue` is computed by passing the relevant `LogLeaf` or
 `LogParent` structure through the `nodeValue` function. The nodes chosen
 correspond to those output by the algorithm in Section 2.1.2 of {{RFC6962}}.
 
@@ -864,7 +863,7 @@ verification, specified in {{update-format}}, before its contents may be
 consumed.
 
 To be able to later perform monitoring, users retain the claimed position of the
-key's first occurence in the log, `SearchProof.position`. They also retain, for
+key's first occurrence in the log, `SearchProof.position`. They also retain, for
 each version of the key observed, the version number and its position in the
 log. Users MUST retain this information if the Transparency Log's deployment
 mode is Contact Monitoring, and they SHOULD retain the entire `SearchResponse`
@@ -922,25 +921,27 @@ Similar to Search and Update operations, users can include the `tree_size` of
 the last TreeHead that they successfully verified.
 
 ~~~ tls
-opaque SearchKey<0..2^16-1>;
-
 struct {
   opaque search_key<0..2^16-1>;
-  uint32 version;
-} ContactKey;
+  uint64 entries<0..2^8-1>;
+} MonitorKey;
 
 struct {
-  SearchKey search_keys<0..2^16-1>;
-  ContactKey contact_keys<0..2^16-1>;
+  MonitorKey owned_keys<0..2^16-1>;
+  MonitorKey contact_keys<0..2^16-1>;
   optional<uint64> last;
 } MonitorRequest;
 ~~~
 
-Users include each of the keys that they own in `search_keys`. If the
+Users include each of the keys that they own in `owned_keys`. If the
 Transparency Log is deployed with Contact Monitoring (or simply if the user
 wants a higher degree of confidence in the log), they also include any keys
-they've looked up in `contact_keys`, potentially omitting any that they
-reasonably expect will not produce new monitoring data.
+they've looked up in `contact_keys`.
+
+Each `MonitorKey` structure contains the key being monitored in `search_key`,
+and a list of entries in the log tree. Each entry is the first step
+in a binary search where the user observed the prefix tree at that entry as
+advertising a specific version of the key.
 
 The Transparency Log responds with a MonitorResponse structure:
 
@@ -1117,7 +1118,7 @@ maximum amount of time after which an auditor signature will no longer be
 accepted. It MUST also specify a maximum number of entries that an auditor's
 signature may be behind the most recent `TreeHead` before it will no longer be
 accepted. Failing to verify an auditor's signature in a query MUST result in an
-error that prevent's the query's response from being consumed or accepted by the
+error that prevents the query's response from being consumed or accepted by the
 application.
 
 The service operator submits updates to the auditor in batches, in the order
@@ -1188,16 +1189,16 @@ It is sometimes possible for a Transparency Log to present forked views of data
 to different users. This means that, from an individual user's perspective, a
 log may appear to be operating correctly in the sense that all of a user's
 Monitor operations succeed. However, the Transparency Log has presented a view
-to the user that's not globally consistent with what it's shown other users. As
-such, the log may associate data with certain keys without the key owner's
+to the user that's not globally consistent with what it has shown other users.
+As such, the log may be able to associate data with keys without the key owner's
 awareness.
 
-The protocol is designed such that users remember the last `TreeHead` that they
-observed when querying the log, and require subsequent queries to prove
-consistency against this tree head. As such, users always stay on an
+The protocol is designed such that users always remember the last `TreeHead`
+that they observed when querying the log, and require subsequent queries to
+prove consistency against this tree head. As such, users always stay on an
 individually-consistent view of the log. If a user is ever presented with a
-forked view, they will hold on to this forked view forever and reject the output
-of any subsequent queries that are inconsistent with it.
+forked view, they hold on to this forked view forever and reject the output of
+any subsequent queries that are inconsistent with it.
 
 This provides ample opportunity for users to detect when a fork has been
 presented, but isn't in itself sufficient for detection. To detect forks, users
@@ -1247,14 +1248,15 @@ maintains the high-level security guarantees of KT:
   users observe data associated with a key that others do not), this will be
   detected either immediately or in a timely manner by background monitoring.
 
-In the specific case of migrating from an old log to a new one, this policy may
+<!-- TODO: Revisit how to make this work. -->
+<!-- In the specific case of migrating from an old log to a new one, this policy may
 look like: 1.) Search queries should be executed against the new log first, and
 then against the older log only if nothing was found, 2.) Update queries should
 only be executed against the new log, and 3.) both logs should be monitored as
 they would be if they were run individually. Even after the data migration has
 completed, the old log SHOULD stay operational long enough for all users to
 complete their monitoring of it (keeping in mind that some users may be offline
-for significant amounts of time).
+for significant amounts of time). -->
 
 
 # Security Considerations
@@ -1281,7 +1283,7 @@ To understand why this is secure, we look at what happens when the service
 operator tampers with the log in different ways.
 
 First, say that the service operator attempts to cover up the latest version of
-a key, with then goal of causing a "most recent version" search for the key to
+a key, with the goal of causing a "most recent version" search for the key to
 resolve in a lower version. To do this, the service operator must add a parent
 over the latest version of the key with a prefix tree that contains an
 incorrect version counter. Left unchanged, the key owner will observe that the
