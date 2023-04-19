@@ -402,7 +402,7 @@ Index:  0  1  2  3  4  5  6  7  8  9 10 11 12 13
 Following the structure of this binary tree when executing searches makes
 auditing the Transparency Log much more efficient because users can easily
 reason about which nodes will be accessed when conducting a search. As such,
-only nodes along a specific search path need to be monitored for accuracy.
+only nodes along a specific search path need to be checked for correctness.
 
 The following Python code demonstrates the computations used for following this
 tree structure:
@@ -501,7 +501,7 @@ goal of monitoring a key is to efficiently ensure that, when these new parent
 nodes are created, they're created correctly so that searches for the same
 versions continue converging to the same entries in the log.
 
-To monitor a key, users maintain a small amount of state: map from a version
+To monitor a key, users maintain a small amount of state: a map from a version
 counter, to an entry in the log where looking up the search key in the prefix
 tree at that entry yields the given version. Users initially populate this
 map by setting a version of the key that they've looked up, to map to the entry
@@ -531,6 +531,15 @@ for a key, without waiting to make explicit Monitor queries.
 It is also worth noting that the work required to monitor several versions of
 the same key scales sublinearly, due to the fact that the direct paths of the
 different versions will often intersect.
+
+Once a user has finished updating their monitoring map with the algorithm above,
+all nodes in the map should lie on the frontier of the log. For all the
+remaining nodes of the frontier, users can request proofs from the server that
+the prefix trees at those entries are also constructed correctly. That is, that
+they map the search key to a version counter that's greater than or equal to
+what would be expected. Rather than checking that the version counter is set
+correctly, the primary purpose of these checks is to demonstrate that the
+`position` field in each prefix tree has been set correctly.
 
 
 # Preserving Privacy
@@ -1079,10 +1088,21 @@ wants a higher degree of confidence in the log), they also include any keys
 they've looked up in `contact_keys`.
 
 Each `MonitorKey` structure contains the key being monitored in `search_key`,
-and a list of entries in the log tree. The users wants to check that any new
-parents created over this list of entries have been constructed correctly.
+and a list of entries in the log tree corresponding to the values of the map
+described in {{monitoring}}.
 
-The Transparency Log responds with a MonitorResponse structure:
+The Transparency Log verifies the MonitorRequest by following these steps, for
+each `MonitorKey` structure:
+
+1. Verify that the user owns every key in `owned_keys`, and is allowed to lookup
+   every key in `contact_keys`, based on the application's policy.
+2. Verify that the entries array is sorted in ascending order.
+3. Verify that the entries are all between the initial position of the given
+   search key and the end of the log.
+4. Verify each entry lies on the direct path of different versions of the key.
+
+If the request is valid, the Transparency Log responds with a MonitorResponse
+structure:
 
 ~~~ tls
 struct {
@@ -1107,36 +1127,28 @@ the elements of `owned_keys` and `contact_keys`. Each `MonitorProof` is meant to
 convince the user that the key they looked up is still properly included in the
 log and has not been surreptitiously concealed.
 
-Users verify a monitor response by following these steps:
+The steps of a `MonitorProof` consist of the proofs required to update the
+user's monitoring data following the algorithm in {{monitoring}}, including
+proofs along the current frontier of the log. The steps are provided in the
+order that they're consumed by the monitoring algorithm. If same proof is
+consumed by the monitoring algorithm multiple times, it is provided in the
+`MonitorProof` structure only the first time. Proofs along the frontier are
+provided from left to right, excluding any proofs that have already been
+provided, and excluding any entries of the frontier which are to the left of the
+leftmost entry being monitored.
 
+Users verify a MonitorResponse by following these steps:
 
-
-<!-- The steps of a `ContactProof` represent the **parents** of the entry that
-contain the specified version of the search key. That is, the parents of an
-entry are defined as the log entries that are accessed while following a binary
-search to the given entry, before the entry itself is reached.
-
-Each step contains a `prefix_proof` which is a search for the
-user-specified key in the prefix tree rooted at that parent, along with the
-`commitment` contained in the parent. Users verify that the `prefix_proof` is an
-inclusion proof and that the included counter is greater than or equal to what
-they'd expect, assuring them that the tree is being constructed correctly. The
-`prefix_proof` combined with the `commitment` allow the user to compute the
-value of each parent's log entry which, combined further with
-`ContactProof.inclusion`, produces the root value of the tree for verification
-against `full_tree_head`.
-
-In full, users verify a monitor response by following these steps:
-
-1. Verify that the length of `search_proofs` is the same as `search_keys`. For
-   each proof in `search_proof`:
-   1. Evaluate the search proof according to the steps in
-      {{proof-combined-tree}}, which will produce a verdict as to whether the
-      search was executed correctly and also a candidate root value for the
-      tree.
-   2. Verify that each search arrives at the expected version of the key, at the
-      expected position in the tree (based on the original Update query).
-2. Ensure that all of the candidate root values are the same. With the candidate
+1. Verify that the lengths of `owned_proofs` and `contact_proofs` are the same
+   as the lengths of `owned_keys` and `contact_keys`.
+2. For each `MonitorProof` structure:
+   1. Evalute the monitoring algorithm in {{monitoring}}. Abort with an error if
+      the monitoring algorithm detects that the tree is constructed incorrectly,
+      or if there are fewer or more steps provided than would be expected.
+   2. Construct a candidate root value for the tree by combining the
+      `PrefixProof` and commitment of each step, with the provided inclusion
+      proof.
+3. Verify that all of the candidate root values are the same. With the candidate
    root value:
    1. Verify the proof in `FullTreeHead.consistency`, if one is expected.
    2. Verify the signature in `TreeHead.signature`.
@@ -1145,25 +1157,13 @@ In full, users verify a monitor response by following these steps:
       `TreeHead` are greater than or equal to what they were before.
    4. If third-party auditing is used, verify `auditor_tree_head` with the steps
       described in {{auditing}}.
-3. If contact monitoring is used, verify that the length of `contact_proofs` is
-   the same as `contact_keys`. For each proof in `contact_proofs`:
-   1. Verify that `steps` has the expected number of entries, based on any new
-      parents that have been created over the entry being monitored.
-   2. For each new parent, which should be in `steps` in the same order that
-      each entry is stored in the log tree, verify that `prefix_proof` is an
-      inclusion proof and that the included version counter is greater than or
-      equal to the most recent version of the key observed by the user.
-   3. Compute the log entry represented by each `ContactProofStep` and evaluate
-      the inclusion proof `inclusion` with these log entries. Verify that the
-      root value outputted is equal to the candidate root value verified in step
-      2. -->
 
-Some information is omitted from `MonitorResponse` in the interest of
-efficiency, due to the fact that the user would have already seen and verified
-it as part of conducting other queries. In particular, the VRF output and proof
-for each search key is not provided, or each key's initial position in the log,
-given that both of these can be cached from the original Search or Update query
-for the key.
+Some information is omitted from MonitorResponse in the interest of efficiency,
+due to the fact that the user would have already seen and verified it as part of
+conducting other queries. In particular, the VRF output and proof for each
+search key is not provided, or each key's initial position in the log, given
+that both of these can be cached from the original Search or Update query for
+the key.
 
 ## Distinguished
 
