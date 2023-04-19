@@ -492,6 +492,47 @@ is functionally the same as checking only the last entry, but also allows the
 user to verify that the entire search path leading to the last entry is
 constructed correctly.
 
+### Monitoring
+
+As new entries are added to the log tree, the search path that's traversed to
+find a specific version of a key may change. New intermediate nodes may become
+established in between the root and the leaf, or a new root may be created. The
+goal of monitoring a key is to efficiently ensure that, when these new parent
+nodes are created, they're created correctly so that searches for the same
+versions continue converging to the same entries in the log.
+
+To monitor a key, users maintain a small amount of state: map from a version
+counter, to an entry in the log where looking up the search key in the prefix
+tree at that entry yields the given version. Users initially populate this
+map by setting a version of the key that they've looked up, to map to the entry
+in the log where that version of the key is stored.
+
+To update this map, users receive the most recent tree head from the server and
+follow these steps, for each entry in the map:
+
+1. Compute the entry's direct path based on the current tree size.
+2. If there are no entries in the direct path that are to the right of the
+   current node, then skip updating this entry (there's no new information to
+   update it with).
+3. For each entry in the direct path that's to the right of the current node,
+   from low to high:
+   1. Obtain a proof from the server that the prefix tree at that entry maps the
+      search key to a version counter that's greater than or equal to the
+      current version.
+   2. If the above check was successful, remove the current version-node pair
+      from the map and replace it with a version-node pair corresponding to the
+      entry in the log that was just checked.
+
+This algorithm progressively moves up the tree as new intermediate/root nodes
+are established and verifies that they're constructed correctly. Note that users
+can often execute this process with the output of Search or Update operations
+for a key, without waiting to make explicit Monitor queries.
+
+It is also worth noting that the work required to monitor several versions of
+the same key scales sublinearly, due to the fact that the direct paths of the
+different versions will often intersect.
+
+
 # Preserving Privacy
 
 In addition to being more convenient for many use-cases than similar
@@ -811,12 +852,10 @@ struct {
 
 Each `SearchStep` structure in `steps` is one leaf that was inspected as part of
 the binary search. The steps of the binary search are determined by starting
-with the "middle" leaf (i.e., the leaf whose index is the largest power of two
-less than the size of the log), and incrementally moving the largest power of
-two possible to the right until a node is reached whose position is greater than
-or equal to `position`. This represents the first node which is touched by the
-search. From there, the user moves incrementally smaller powers of two left or
-right, based on the version counter found in each previous step.
+with the "middle" leaf (according to the `root` function in
+{{implicit-binary-search-tree}}), which represents the first node touched by the
+search. From there, the user moves incrementally left or right, based on the
+version counter found in each previous step.
 
 The `prefix_proof` field of a `SearchStep` is the output of searching the prefix
 tree whose root is at that leaf for the search key, while the `commitment` field
@@ -879,6 +918,13 @@ MUST successfully verify this signature before consuming `UpdateValue.value`.
 
 
 # User Operations
+
+The basic user operations are organized as a request-response protocol between a
+user and the Transparency Log operator. Generally, users MUST retain the most
+recent `TreeHead` they've successfully verified as part of any query response,
+and populate the `last` field of any query request with the `tree_size` from
+this `TreeHead`. This ensures that all operations performed by the user return
+consistent results.
 
 ## Search
 
@@ -1033,9 +1079,8 @@ wants a higher degree of confidence in the log), they also include any keys
 they've looked up in `contact_keys`.
 
 Each `MonitorKey` structure contains the key being monitored in `search_key`,
-and a list of entries in the log tree. Each entry is the first step
-in a binary search where the user observed the prefix tree at that entry as
-advertising a specific version of the key.
+and a list of entries in the log tree. The users wants to check that any new
+parents created over this list of entries have been constructed correctly.
 
 The Transparency Log responds with a MonitorResponse structure:
 
@@ -1043,36 +1088,33 @@ The Transparency Log responds with a MonitorResponse structure:
 struct {
   PrefixProof prefix_proof;
   opaque commitment<Hash.Nh>;
-} ContactProofStep;
+} MonitorProofStep;
 
 struct {
-  ContactProofStep steps<0..2^8-1>;
+  MonitorProofStep steps<0..2^8-1>;
   InclusionProof inclusion;
-} ContactProof;
+} MonitorProof;
 
 struct {
   FullTreeHead full_tree_head;
-  SearchProof search_proofs<0..2^16-1>;
-  ContactProof contact_proofs<0..2^16-1>;
+  MonitorProof owned_proofs<0..2^16-1>;
+  MonitorProof contact_proofs<0..2^16-1>;
 } MonitorResponse;
 ~~~
 
-Each proof in `search_proofs` represents a search for the most recent version of
-the corresponding key in `search_keys`. If `MonitorRequest.last` is populated,
-any search steps in `SearchProof.steps` for entries of the log before `last` are
-omitted to save space.
+The elements of `owned_proofs` and `contact_proofs` correspond one-to-one with
+the elements of `owned_keys` and `contact_keys`. Each `MonitorProof` is meant to
+convince the user that the key they looked up is still properly included in the
+log and has not been surreptitiously concealed.
 
-The elements of `contact_proofs` also correspond one-to-one with the elements of
-`contact_keys`. Each `ContactProof` is meant to convince the user that the key
-they looked up is still properly included in the log and has not been
-surreptitiously concealed.
+Users verify a monitor response by following these steps:
 
-The steps of a `ContactProof` represent the **parents** of the entry that
+
+
+<!-- The steps of a `ContactProof` represent the **parents** of the entry that
 contain the specified version of the search key. That is, the parents of an
 entry are defined as the log entries that are accessed while following a binary
-search to the given entry, before the entry itself is reached. However, if
-`MonitorRequest.last` is populated, then any parents before `last` are omitted
-to save space.
+search to the given entry, before the entry itself is reached.
 
 Each step contains a `prefix_proof` which is a search for the
 user-specified key in the prefix tree rooted at that parent, along with the
@@ -1114,17 +1156,14 @@ In full, users verify a monitor response by following these steps:
    3. Compute the log entry represented by each `ContactProofStep` and evaluate
       the inclusion proof `inclusion` with these log entries. Verify that the
       root value outputted is equal to the candidate root value verified in step
-      2.
+      2. -->
 
 Some information is omitted from `MonitorResponse` in the interest of
 efficiency, due to the fact that the user would have already seen and verified
 it as part of conducting other queries. In particular, the VRF output and proof
-for each search key is not provided, given that it can be cached from the
-original Search or Update query for the key.
-
-Generally, users MUST retain the most recent `TreeHead` they've successfully
-verified as part of any query response, and populate the `last` field of any query
-request with the `tree_size` from this `TreeHead`.
+for each search key is not provided, or each key's initial position in the log,
+given that both of these can be cached from the original Search or Update query
+for the key.
 
 ## Distinguished
 
