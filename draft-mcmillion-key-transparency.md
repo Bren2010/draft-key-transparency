@@ -136,8 +136,8 @@ reason for rejection, is left to the application.
 Finally, this document does not assume that clients can reliably communicate
 with each other out-of-band (that is, away from any interference by the
 Transparency Log operator), or communicate with the Transparency Log
-anonymously. However, later sections will give guidance on how these channels
-can be utilized effectively when or if they're available. <!-- TODO: Link later section -->
+anonymously. However, {{detecting-forks}} gives guidance on how these channels
+can be utilized effectively when or if they're available.
 
 ## Basic Operations
 
@@ -206,7 +206,7 @@ consistent with what it has shown all other clients. That is, when a client
 searches for a key, they're guaranteed that the result they receive represents
 the same result that any other client searching for the same key would've seen.
 When a client updates a key, they're guaranteed that other clients will see the
-update the next time they search for the key. <!-- subject to caching? -->
+update the next time they search for the key.
 
 If the Transparency Log operator does not execute an operation correctly, then
 either:
@@ -218,7 +218,7 @@ Depending on the exact reason that the client enters an invalid state, it will
 either be detected by background monitoring or the next time that out-of-band
 communication is available. Importantly, this means that clients must stay
 online for some fixed amount of time after entering an invalid state for it to
-be successfully detected. <!-- need oob communication with someone not attacked? -->
+be successfully detected.
 
 The exact caveats of the above guarantee depend naturally on the security of
 underlying cryptographic primitives, but also the deployment mode that the
@@ -229,10 +229,6 @@ Transparency Log relies on:
   to trick clients into accepting malicious results.
 - Contact Monitoring requires an assumption that the client that owns a key and
   all clients that look up the key do the necessary monitoring afterwards.
-  <!-- write down why collusion-resistant KT is better than just having two operators stay in sync? -->
-
-<!-- TODO: Once the whole protocol is written, ensure this is as precise as possible. -->
-<!-- TODO: In Security Considerations, calculate how long you need to stay online for Contact Monitoring to detect an attack -->
 
 
 # Tree Construction
@@ -1381,15 +1377,19 @@ maintains the high-level security guarantees of KT:
   users observe data associated with a key that others do not), this will be
   detected either immediately or in a timely manner by background monitoring.
 
-<!-- TODO: Revisit how to make this work. -->
-<!-- In the specific case of migrating from an old log to a new one, this policy may
-look like: 1.) Search queries should be executed against the new log first, and
-then against the older log only if nothing was found, 2.) Update queries should
-only be executed against the new log, and 3.) both logs should be monitored as
-they would be if they were run individually. Even after the data migration has
-completed, the old log SHOULD stay operational long enough for all users to
-complete their monitoring of it (keeping in mind that some users may be offline
-for significant amounts of time). -->
+In the specific case of migrating from an old log to a new one, this policy may
+look like:
+
+1. Search queries should be executed against the old log first, and then against
+   the new log only if the most recent version of a key in the old log is a
+   tombstone.
+2. Update queries should only be executed against the new log, adding a
+   tombstone entry to the old log if one hasn't been already created.
+3. Both logs should be monitored as they would be if they were run individually.
+   Once the migration has completed and the old log has stopped accepting
+   changes, the old log SHOULD stay operational long enough for all users to
+   complete their monitoring of it (keeping in mind that some users may be
+   offline for a significant amount of time).
 
 
 # Security Considerations
