@@ -674,7 +674,7 @@ parent.value = Hash(0x01 ||
 
 nodeValue(node):
   if node.type == emptyNode:
-    return random(Hash.Nh) // random string of Hash.Nh bytes
+    return standIn(seed, counter)
   else if node.type == leafNode:
     return Hash(0x00 || node.key || node.counter || node.position)
   else if node.type == parentNode:
@@ -682,8 +682,18 @@ nodeValue(node):
 ~~~
 
 where `Hash` denotes the ciphersuite hash function. Whenever a parent's left or
-right child is missing, a random value is chosen to represent the child's node
-value.
+right child is missing, a stand-in value is computed from a random seed. The
+stand-in value is computed as:
+
+~~~ pseudocode
+standIn(seed, counter):
+  return Hash(0x02 || seed || counter)
+~~~
+
+The seed value is a randomly sampled byte string of `Hash.Nh` bytes, and the
+counter is an 8-bit integer. The counter starts at zero and increases by one for
+each subsequent stand-in value that needs to be computed, counting from the root
+down.
 
 ## Log Tree {#crypto-log-tree}
 
@@ -1231,6 +1241,10 @@ struct {
 ~~~
 
 The signature is computed over the `UpdateTBS` structure from {{update-format}}.
+The service operator MUST maintain its own records (independent of the
+third-party manager) for the most recent version of each key, for the purpose of
+producing this signature. The service operator SHOULD also attempt to
+proactively detect forks presented by the third-party manager.
 
 ## Auditing
 
@@ -1254,8 +1268,17 @@ The service operator submits updates to the auditor in batches, in the order
 that they were added to the log tree:
 
 ~~~ tls
+enum {
+  reserved(0),
+  real(1),
+  fake(2),
+  (255)
+} AuditorUpdateType;
+
 struct {
+  AuditorUpdateType update_type;
   opaque index<VRF.Nh>;
+  opaque seed<Hash.Nh>;
   opaque commitment<Hash.Nh>;
 } AuditorUpdate;
 
@@ -1264,9 +1287,13 @@ struct {
 } AuditorRequest;
 ~~~
 
-The `index` field of each `AuditorUpdate` contains the VRF output of the search
-key that was updated and `commitment` contains the service provider's
-commitment to the update. The auditor responds with:
+The `update_type` field of each `AuditorUpdate` specifies whether the update was <!-- link section when this is written -->
+real or fake. Real updates genuinely affect a leaf node of the prefix tree,
+while fake updates only change the random stand-in value for a non-existent
+child. The `index` field contains the VRF output of the search key that
+was updated, `seed` contains the seed used to compute new random stand-in values
+for non-existent children in the prefix tree, and `commitment` contains the
+service provider's commitment to the update. The auditor responds with:
 
 ~~~
 struct {
