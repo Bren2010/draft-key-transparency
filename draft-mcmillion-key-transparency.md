@@ -650,7 +650,7 @@ struct {
 } PrefixLeaf;
 ~~~
 
-where `key` is the full search key, `counter` is the counter of times that the
+where `key` is the VRF-output search key, `counter` is the counter of times that the
 key has been updated (starting at 0 for a key that was just created), `position`
 is the position in the log of the first occurrence of this key, and `VRF.Nh` is
 the output size of the ciphersuite VRF in bytes.
@@ -690,9 +690,9 @@ standIn(seed, counter):
   return Hash(0x02 || seed || counter)
 ~~~
 
-The seed value is a randomly sampled byte string of `Hash.Nh` bytes, and the
+The seed value is a randomly sampled byte string of `Hash.Nh` bytes and the
 counter is an 8-bit integer. The counter starts at zero and increases by one for
-each subsequent stand-in value that needs to be computed, counting from the root
+each subsequent stand-in value that's needed, counting from the root
 down.
 
 ## Log Tree {#crypto-log-tree}
@@ -1417,6 +1417,37 @@ look like:
    changes, the old log SHOULD stay operational long enough for all users to
    complete their monitoring of it (keeping in mind that some users may be
    offline for a significant amount of time).
+
+Placing a tombstone entry for each key in the old log gives users a clear
+indication as to which log contains the most recent version of a key and
+prevents them from incorrectly accepting a stale version if the new log rejects
+a search query.
+
+## Obscuring Update Rate
+
+While the protocol already prevents outside observers from determining the total
+number of key-value pairs stored by a server, some applications may also wish to
+obscure the frequency of updates. Revealing the frequency of updates may make it
+possible to deduce the total size of the tree, or it may expose sensitive
+information about an application's usage patterns. However, fully hiding the
+frequency of updates is impossible with any hash-based KT construction. Instead,
+an application may pad real updates with "fake" random updates, such that the
+update rate measured by observers is fixed to an arbitrary upper-bound value.
+
+The service provider produces a fake update by first choosing three random
+values: one to represent the VRF output of the key being updated, one to
+represent the commitment to the update, and one which will be the seed for
+generating a new stand-in value in the prefix tree. It then traverses the prefix
+tree according to the random VRF output, and replaces the first stand-in value
+it reaches with the one generated from the chosen seed. Note that this means
+that fake updates don't affect a leaf of the prefix tree. Finally, the service
+provider adds a new entry to the log tree with the random commitment value and
+the updated prefix tree root.
+
+The VRF output and commitment value can be chosen randomly, instead of being
+computed with the actual VRF or commitment scheme, because the server will never
+be required to actually open either of these values. No legitimate search for a
+key will ever terminate at this entry in the log.
 
 
 # Security Considerations
