@@ -621,13 +621,14 @@ defined in {{kt-ciphersuites}}.
 
 ## Commitment
 
-Commitments are computed with HMAC {{RFC2104}}, using the hash function
-specified by the ciphersuite. To produce a new commitment to a value called
-`message`, the application generates a random 16 byte value called `opening` and
-then computes:
+As discussed in {{preserving-privacy}}, commitments are stored in the leaves of
+the log tree and correspond to updated key-value pairs. Commitments are computed
+with HMAC {{RFC2104}}, using the hash function specified by the ciphersuite. To
+produce a new commitment, the application generates a random 16 byte value
+called `opening` and computes:
 
 ~~~ pseudocode
-commitment = HMAC(fixedKey, opening || message)
+commitment = HMAC(fixedKey, CommitmentValue)
 ~~~
 
 where `fixedKey` is the 16 byte hex-decoded value:
@@ -636,11 +637,23 @@ where `fixedKey` is the 16 byte hex-decoded value:
 d821f8790d97709796b4d7903357c3f5
 ~~~
 
-This fixed key allows the HMAC function, and thereby the commitment scheme, to
-be modeled as a random oracle.
+and CommitmentValue is specified as:
 
-The output value `commitment` may be published, while `opening` and `message`
-should be kept private until the commitment is meant to be revealed.
+~~~ tls
+struct {
+  opaque opening<16>;
+  opaque search_key<0..2^16-1>;
+  UpdateValue update;
+} CommitmentValue;
+~~~
+
+This fixed key allows the HMAC function, and thereby the commitment scheme, to
+be modeled as a random oracle. The `search_key` field of CommitmentValue
+contains the search key being updated (the search key provided by the user, not
+the VRF output) and the `update` field contains the value of the update.
+
+The output value `commitment` may be published, while `opening` should be kept
+private until the commitment is meant to be revealed.
 
 ## Prefix Tree
 
@@ -984,7 +997,7 @@ struct {
   SearchProof search;
 
   opaque opening<16>;
-  opaque value<0..2^32-1>;
+  UpdateValue value;
 } SearchResponse;
 ~~~
 
@@ -1013,13 +1026,11 @@ Users verify a search response by following these steps:
    4. If third-party auditing is used, verify `auditor_tree_head` with the steps
       described in {{auditing}}.
 5. Verify that the commitment in the terminal search step opens to
-   `SearchValue.value` with opening `SearchValue.opening`.
+   `SearchResponse.value` with opening `SearchResponse.opening`.
 
-Provided that the above verification is successful, users decode the encoded
-`UpdateValue` structure in `SearchValue.value`. Depending on the deployment mode
-of the Transparency Log, the `UpdateValue` may or may not require additional
-verification, specified in {{update-format}}, before its contents may be
-consumed.
+Depending on the deployment mode of the Transparency Log, the `value` field may
+or may not require additional verification, specified in {{update-format}},
+before its contents may be consumed.
 
 To be able to later perform monitoring, users retain the claimed position of the
 key's first occurrence in the log, `SearchProof.position`. They also retain, for
