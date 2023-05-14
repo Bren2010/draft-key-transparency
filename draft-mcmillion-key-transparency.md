@@ -1271,12 +1271,15 @@ provided to users along with the responses for their queries.
 The third-party auditor is expected to run asynchronously, downloading and
 authenticating a log's contents in the background, so as not to become a
 bottleneck for the service operator. This means that the signatures from the
-auditor will usually be somewhat delayed. Applications MUST specify a
-maximum amount of time after which an auditor signature will no longer be
-accepted. It MUST also specify a maximum number of entries that an auditor's
-signature may be behind the most recent `TreeHead` before it will no longer be
-accepted. Failing to verify an auditor's signature in a query MUST result in an
-error that prevents the query's response from being consumed or accepted by the
+auditor will usually be somewhat delayed. Applications MUST specify a maximum
+amount of time after which an auditor signature will no longer be accepted. It
+MUST also specify a maximum number of entries that an auditor's signature may be
+behind the most recent `TreeHead` before it will no longer be accepted. Both of
+these parameters SHOULD be small relative to the log's normal operating scale so
+that misbehavior can be detected quickly.
+
+Failing to verify an auditor's signature in a query MUST result in an error that
+prevents the query's response from being consumed or accepted by the
 application.
 
 The service operator submits updates to the auditor in batches, in the order
