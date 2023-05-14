@@ -492,16 +492,18 @@ constructed correctly.
 
 As new entries are added to the log tree, the search path that's traversed to
 find a specific version of a key may change. New intermediate nodes may become
-established in between the root and the leaf, or a new root may be created. The
+established in between the search root and the leaf, or a new search root may be created. The
 goal of monitoring a key is to efficiently ensure that, when these new parent
 nodes are created, they're created correctly so that searches for the same
 versions continue converging to the same entries in the log.
 
-To monitor a key, users maintain a small amount of state: a map from a version
-counter, to an entry in the log where looking up the search key in the prefix
-tree at that entry yields the given version. Users initially populate this
-map by setting a version of the key that they've looked up, to map to the entry
-in the log where that version of the key is stored.
+To monitor a given search key, users maintain a small amount of state: a map
+from a version counter, to an entry in the log where looking up the search key
+in the prefix tree at that entry yields the given version. Users initially
+populate this map by setting a version of the search key that they've looked up,
+to map to the entry in the log where that version of the key is stored. A map
+may track several different versions of a search key simultaneously, if a user
+has been shown different versions of the same search key.
 
 To update this map, users receive the most recent tree head from the server and
 follow these steps, for each entry in the map:
@@ -526,7 +528,9 @@ for a key, without waiting to make explicit Monitor queries.
 
 It is also worth noting that the work required to monitor several versions of
 the same key scales sublinearly, due to the fact that the direct paths of the
-different versions will often intersect.
+different versions will often intersect. Intersections reduce the total number
+of entries in the map and therefore the amount of work that will be needed to
+monitor the key from then on.
 
 Once a user has finished updating their monitoring map with the algorithm above,
 all nodes in the map should lie on the frontier of the log. For all the
