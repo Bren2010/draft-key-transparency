@@ -534,12 +534,12 @@ monitor the key from then on.
 
 Once a user has finished updating their monitoring map with the algorithm above,
 all nodes in the map should lie on the frontier of the log. For all the
-remaining nodes of the frontier, users can request proofs from the server that
-the prefix trees at those entries are also constructed correctly. That is, that
-they map the search key to a version counter that's greater than or equal to
-what would be expected. Rather than checking that the version counter is set
-correctly, the primary purpose of these checks is to demonstrate that the
-`position` field in each prefix tree has been set correctly.
+remaining nodes of the frontier, users request proofs from the server that the
+prefix trees at those entries are also constructed correctly. That is, that they
+map the search key to a version counter that's greater than or equal to what
+would be expected. Rather than checking the version counter, the primary purpose
+of these checks is to demonstrate that the `position` field in each prefix tree
+has been set correctly.
 
 
 # Preserving Privacy
@@ -642,7 +642,7 @@ and CommitmentValue is specified as:
 ~~~ tls
 struct {
   opaque opening<16>;
-  opaque search_key<0..2^16-1>;
+  opaque search_key<0..2^8-1>;
   UpdateValue update;
 } CommitmentValue;
 ~~~
@@ -707,7 +707,7 @@ standIn(seed, counter):
   return Hash(0x02 || seed || counter)
 ~~~
 
-The seed value is a randomly sampled byte string of `Hash.Nh` bytes and the
+The seed value is a randomly sampled byte string of 16 bytes and the
 counter is an 8-bit integer. The counter starts at zero and increases by one for
 each subsequent stand-in value that's needed, counting from the root
 down.
@@ -830,7 +830,7 @@ Consistency proofs are encoded similarly:
 
 ~~~ tls
 struct {
-  NodeValue elements<0..2^16-1>;
+  NodeValue elements<0..2^8-1>;
 } ConsistencyProof;
 ~~~
 
@@ -845,7 +845,7 @@ given search key. Such a proof is encoded as:
 
 ~~~ tls
 struct {
-  NodeValue elements<0..2^16-1>;
+  NodeValue elements<8*VRF.Nh>;
   uint32 counter;
 } PrefixProof;
 ~~~
@@ -937,7 +937,7 @@ signature from the service operator, using the public key from
 
 ~~~ tls
 struct {
-  opaque search_key<0..2^16-1>;
+  opaque search_key<0..2^8-1>;
   uint32 version;
   opaque value<0..2^32-1>;
 } UpdateTBS;
@@ -968,7 +968,7 @@ they successfully verified.
 
 ~~~ tls
 struct {
-  opaque search_key<0..2^16-1>;
+  opaque search_key<0..2^8-1>;
   optional<uint32> version;
   optional<uint64> last;
 } SearchRequest;
@@ -1051,7 +1051,7 @@ verified.
 
 ~~~ tls
 struct {
-  opaque search_key<0..2^16-1>;
+  opaque search_key<0..2^8-1>;
   opaque value<0..2^32-1>;
   optional<uint64> last;
 } UpdateRequest;
@@ -1073,12 +1073,8 @@ struct {
 
 Users verify the UpdateResponse as if it were a SearchResponse for the most
 recent version of `search_key`, and they also check that their update is the
-last entry in the log.
-
-Note that the contents of `UpdateRequest.value` is the new value of the lookup
-key and NOT a serialized `UpdateValue` object. To aid verification, the update
-response provides the `UpdatePrefix` structure necessary to reconstruct the
-`UpdateValue`.
+last entry in the log. To aid verification, the update response provides the
+`UpdatePrefix` structure necessary to reconstruct the `UpdateValue`.
 
 Users MUST retain the information required to perform monitoring as described in
 {{search}}.
@@ -1092,13 +1088,13 @@ the last TreeHead that they successfully verified.
 
 ~~~ tls
 struct {
-  opaque search_key<0..2^16-1>;
+  opaque search_key<0..2^8-1>;
   uint64 entries<0..2^8-1>;
 } MonitorKey;
 
 struct {
-  MonitorKey owned_keys<0..2^16-1>;
-  MonitorKey contact_keys<0..2^16-1>;
+  MonitorKey owned_keys<0..2^8-1>;
+  MonitorKey contact_keys<0..2^8-1>;
   optional<uint64> last;
 } MonitorRequest;
 ~~~
@@ -1115,12 +1111,14 @@ described in {{monitoring}}.
 The Transparency Log verifies the MonitorRequest by following these steps, for
 each `MonitorKey` structure:
 
-1. Verify that the user owns every key in `owned_keys`, and is allowed to lookup
+1. Verify that the requested keys in `owned_keys` and `contact_keys` are all
+   distinct.
+2. Verify that the user owns every key in `owned_keys`, and is allowed to lookup
    every key in `contact_keys`, based on the application's policy.
-2. Verify that the entries array is sorted in ascending order.
-3. Verify that the entries are all between the initial position of the given
-   search key and the end of the log.
-4. Verify each entry lies on the direct path of different versions of the key.
+3. Verify that each `entries` array is sorted in ascending order.
+4. Verify that the entries in each `entries` array are all between the initial
+   position of the requested key and the end of the log.
+5. Verify each entry lies on the direct path of different versions of the key.
 
 If the request is valid, the Transparency Log responds with a MonitorResponse
 structure:
@@ -1138,8 +1136,8 @@ struct {
 
 struct {
   FullTreeHead full_tree_head;
-  MonitorProof owned_proofs<0..2^16-1>;
-  MonitorProof contact_proofs<0..2^16-1>;
+  MonitorProof owned_proofs<0..2^8-1>;
+  MonitorProof contact_proofs<0..2^8-1>;
 } MonitorResponse;
 ~~~
 
@@ -1296,7 +1294,7 @@ enum {
 struct {
   AuditorUpdateType update_type;
   opaque index<VRF.Nh>;
-  opaque seed<Hash.Nh>;
+  opaque seed<16>;
   opaque commitment<Hash.Nh>;
 } AuditorUpdate;
 
@@ -1305,8 +1303,8 @@ struct {
 } AuditorRequest;
 ~~~
 
-The `update_type` field of each `AuditorUpdate` specifies whether the update was <!-- link section when this is written -->
-real or fake. Real updates genuinely affect a leaf node of the prefix tree,
+The `update_type` field of each `AuditorUpdate` specifies whether the update was
+real or fake (see {{obscuring-update-rate}}). Real updates genuinely affect a leaf node of the prefix tree,
 while fake updates only change the random stand-in value for a non-existent
 child. The `index` field contains the VRF output of the search key that
 was updated, `seed` contains the seed used to compute new random stand-in values
