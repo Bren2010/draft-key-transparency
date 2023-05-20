@@ -691,7 +691,7 @@ parent.value = Hash(0x01 ||
 
 nodeValue(node):
   if node.type == emptyNode:
-    return standIn(seed, counter)
+    return standIn(seed, level)
   else if node.type == leafNode:
     return Hash(0x00 || node.key || node.counter || node.position)
   else if node.type == parentNode:
@@ -703,14 +703,13 @@ right child is missing, a stand-in value is computed from a random seed. The
 stand-in value is computed as:
 
 ~~~ pseudocode
-standIn(seed, counter):
-  return Hash(0x02 || seed || counter)
+standIn(seed, level):
+  return Hash(0x02 || seed || level)
 ~~~
 
-The seed value is a randomly sampled byte string of 16 bytes and the
-counter is an 8-bit integer. The counter starts at zero and increases by one for
-each subsequent stand-in value that's needed, counting from the root
-down.
+The `seed` value is a randomly sampled byte string of 16 bytes and `level` is an
+8-bit integer that represents the level of the prefix tree where the stand-in
+value is stored.
 
 ## Log Tree {#crypto-log-tree}
 
