@@ -639,7 +639,7 @@ d821f8790d97709796b4d7903357c3f5
 
 and CommitmentValue is specified as:
 
-~~~ tls
+~~~ tls-presentation
 struct {
   opaque opening<16>;
   opaque search_key<0..2^8-1>;
@@ -659,7 +659,7 @@ private until the commitment is meant to be revealed.
 
 The leaf nodes of a prefix tree are serialized as:
 
-~~~ tls
+~~~ tls-presentation
 struct {
     opaque key<VRF.Nh>;
     uint32 counter;
@@ -674,7 +674,7 @@ the output size of the ciphersuite VRF in bytes.
 
 The parent nodes of a prefix tree are serialized as:
 
-~~~ tls
+~~~ tls-presentation
 struct {
   opaque value<Hash.Nh>;
 } PrefixParent;
@@ -715,7 +715,7 @@ value is stored.
 
 The leaf and parent nodes of a log tree are serialized as:
 
-~~~ tls
+~~~ tls-presentation
 struct {
   opaque commitment<Hash.Nh>;
   opaque prefix_tree<Hash.Nh>;
@@ -751,7 +751,7 @@ nodeValue(node):
 The head of a Transparency Log, which represents the log's most recent state, is
 represented as:
 
-~~~ tls
+~~~ tls-presentation
 struct {
   uint64 tree_size;
   uint64 timestamp;
@@ -768,7 +768,7 @@ otherwise the public key used belongs to the service operator.
 The signature itself is computed over a `TreeHeadTBS` structure, which
 incorporates the log's current state as well as long-term log configuration:
 
-~~~ tls
+~~~ tls-presentation
 enum {
   reserved(0),
   contactMonitoring(1),
@@ -810,7 +810,7 @@ copath values of a leaf. Similarly, a bulk inclusion proof for any number of
 leaves is given by providing the fewest node values that can be hashed together
 with the specified leaves to produce the root value. Such a proof is encoded as:
 
-~~~ tls
+~~~ tls-presentation
 opaque NodeValue<Hash.Nh>;
 
 struct {
@@ -827,7 +827,7 @@ right subtree, and so on recursively.
 
 Consistency proofs are encoded similarly:
 
-~~~ tls
+~~~ tls-presentation
 struct {
   NodeValue elements<0..2^8-1>;
 } ConsistencyProof;
@@ -842,7 +842,7 @@ correspond to those output by the algorithm in Section 2.1.2 of {{RFC6962}}.
 A proof from a prefix tree authenticates that a search was done correctly for a
 given search key. Such a proof is encoded as:
 
-~~~ tls
+~~~ tls-presentation
 struct {
   NodeValue elements<8*VRF.Nh>;
   uint32 counter;
@@ -868,7 +868,7 @@ A proof from a combined log and prefix tree follows the execution of a binary
 search through the leaves of the log tree, as described in {{combined-tree}}. It
 is serialized as follows:
 
-~~~ tls
+~~~ tls-presentation
 struct {
   PrefixProof prefix_proof;
   opaque commitment<Hash.Nh>;
@@ -914,7 +914,7 @@ The updates committed to by a combined tree structure contain the new value of a
 search key, along with additional information depending on the deployment mode
 of the Transparency Log. They are serialized as follows:
 
-~~~ tls
+~~~ tls-presentation
 struct {
   select (Configuration.mode) {
     case thirdPartyManagement:
@@ -934,7 +934,7 @@ In the event that third-party management is used, the `prefix` field contains a
 signature from the service operator, using the public key from
 `Configuration.leaf_public_key`, over the following structure:
 
-~~~ tls
+~~~ tls-presentation
 struct {
   opaque search_key<0..2^8-1>;
   uint32 version;
@@ -965,7 +965,7 @@ optionally specify a version of the key that they'd like to receive, if not the
 most recent one. They can also include the `tree_size` of the last TreeHead that
 they successfully verified.
 
-~~~ tls
+~~~ tls-presentation
 struct {
   opaque search_key<0..2^8-1>;
   optional<uint32> version;
@@ -975,7 +975,7 @@ struct {
 
 In turn, the Transparency Log responds with a SearchResponse structure:
 
-~~~ tls
+~~~ tls-presentation
 struct {
   TreeHead tree_head;
   optional<ConsistencyProof> consistency;
@@ -1048,7 +1048,7 @@ Transparency Log containing the new key and value to store. Users can also
 optionally include the `tree_size` of the last TreeHead that they successfully
 verified.
 
-~~~ tls
+~~~ tls-presentation
 struct {
   opaque search_key<0..2^8-1>;
   opaque value<0..2^32-1>;
@@ -1059,7 +1059,7 @@ struct {
 If the request is acceptable by application-layer policies, the Transparency Log
 adds the new key-value pair to the log and returns an UpdateResponse structure:
 
-~~~ tls
+~~~ tls-presentation
 struct {
   FullTreeHead full_tree_head;
   VRFResult vrf_result;
@@ -1085,7 +1085,7 @@ Transparency Log containing information about the keys they wish to monitor.
 Similar to Search and Update operations, users can include the `tree_size` of
 the last TreeHead that they successfully verified.
 
-~~~ tls
+~~~ tls-presentation
 struct {
   opaque search_key<0..2^8-1>;
   uint64 entries<0..2^8-1>;
@@ -1122,7 +1122,7 @@ each `MonitorKey` structure:
 If the request is valid, the Transparency Log responds with a MonitorResponse
 structure:
 
-~~~ tls
+~~~ tls-presentation
 struct {
   PrefixProof prefix_proof;
   opaque commitment<Hash.Nh>;
@@ -1189,7 +1189,7 @@ Users can request distinguished tree heads by submitting a DistinguishedRequest
 to the Transparency Log containing the approximate timestamp of the tree head
 they'd like to receive.
 
-~~~ tls
+~~~ tls-presentation
 struct {
   uint64 timestamp;
   optional<uint64> last;
@@ -1200,7 +1200,7 @@ In turn, the Transparency Log responds with a DistinguishedResponse structure
 containing the `FullTreeHead` with the timestamp closest to what the user
 requested and the root hash of the tree at this point.
 
-~~~ tls
+~~~ tls-presentation
 struct {
   FullTreeHead full_tree_head;
   opaque root<Hash.Nh>;
@@ -1245,7 +1245,7 @@ are proxied between the user and the third-party manager unchanged with the
 exception of `UpdateRequest`, which needs to carry the service operator's
 signature over the update:
 
-~~~ tls
+~~~ tls-presentation
 struct {
   UpdateRequest request;
   opaque signature<0..2^16-1>;
@@ -1282,7 +1282,7 @@ application.
 The service operator submits updates to the auditor in batches, in the order
 that they were added to the log tree:
 
-~~~ tls
+~~~ tls-presentation
 enum {
   reserved(0),
   real(1),
@@ -1325,7 +1325,7 @@ the time the signature was produced (in milliseconds since the Unix epoch).
 The auditor `TreeHead` from this response is provided to users wrapped in the
 following struct:
 
-~~~ tls
+~~~ tls-presentation
 struct {
   TreeHead tree_head;
   opaque root_value<Hash.Nh>;
@@ -1565,7 +1565,7 @@ this document
 
 ## KT Ciphersuites
 
-~~~tls
+~~~ tls-presentation
 uint16 CipherSuite;
 ~~~
 
