@@ -498,28 +498,29 @@ nodes are created, they're created correctly so that searches for the same
 versions continue converging to the same entries in the log.
 
 To monitor a given search key, users maintain a small amount of state: a map
-from a version counter, to an entry in the log where looking up the search key
-in the prefix tree at that entry yields the given version. Users initially
-populate this map by setting a version of the search key that they've looked up,
-to map to the entry in the log where that version of the key is stored. A map
+from the position of an entry in the log to a version counter, where looking up
+the search key in the prefix tree in the entry at that position yields the given
+version. Users initially populate this map by setting the position of an entry
+they've looked up, to map to the version of the key stored in that entry. A map
 may track several different versions of a search key simultaneously, if a user
 has been shown different versions of the same search key.
 
 To update this map, users receive the most recent tree head from the server and
 follow these steps, for each entry in the map:
 
-1. Compute the entry's direct path based on the current tree size.
+1. Compute the entry's direct path (in terms of the Implicit Binary Search Tree)
+   based on the current tree size.
 2. If there are no entries in the direct path that are to the right of the
-   current node, then skip updating this entry (there's no new information to
+   current entry, then skip updating this entry (there's no new information to
    update it with).
-3. For each entry in the direct path that's to the right of the current node,
+3. For each entry in the direct path that's to the right of the current entry,
    from low to high:
    1. Obtain a proof from the server that the prefix tree at that entry maps the
       search key to a version counter that's greater than or equal to the
       current version.
-   2. If the above check was successful, remove the current version-node pair
-      from the map and replace it with a version-node pair corresponding to the
-      entry in the log that was just checked.
+   2. If the above check was successful, remove the current position-version pair
+      from the map and replace it with a position-version pair corresponding to
+      the entry in the log that was just checked.
 
 This algorithm progressively moves up the tree as new intermediate/root nodes
 are established and verifies that they're constructed correctly. Note that users
@@ -820,10 +821,11 @@ struct {
 
 Each `NodeValue` is a uniform size, computed by passing the relevant `LogLeaf`
 or `LogParent` structures through the `nodeValue` function in
-{{crypto-log-tree}}. Finally, the contents of the `elements` array is kept in
-left-to-right order: if a node is present in the root's left subtree, its value
-must be listed before any values provided from nodes that are in the root's
-right subtree, and so on recursively.
+{{crypto-log-tree}}. For individual inclusion proofs, the contents of the
+`elements` array is kept in bottom-to-top order. For batch inclusion proofs, the
+contents of the `elements` array is kept in left-to-right order: if a node is
+present in the root's left subtree, its value must be listed before any values
+provided from nodes that are in the root's right subtree, and so on recursively.
 
 Consistency proofs are encoded similarly:
 
@@ -872,23 +874,23 @@ is serialized as follows:
 struct {
   PrefixProof prefix_proof;
   opaque commitment<Hash.Nh>;
-} SearchStep;
+} ProofStep;
 
 struct {
   uint64 position;
-  SearchStep steps<0..2^8-1>;
+  ProofStep steps<0..2^8-1>;
   InclusionProof inclusion;
 } SearchProof;
 ~~~
 
-Each `SearchStep` structure in `steps` is one leaf that was inspected as part of
+Each `ProofStep` structure in `steps` is one leaf that was inspected as part of
 the binary search. The steps of the binary search are determined by starting
 with the "middle" leaf (according to the `root` function in
 {{implicit-binary-search-tree}}), which represents the first node touched by the
 search. From there, the user moves incrementally left or right, based on the
 version counter found in each previous step.
 
-The `prefix_proof` field of a `SearchStep` is the output of searching the prefix
+The `prefix_proof` field of a `ProofStep` is the output of searching the prefix
 tree whose root is at that leaf for the search key, while the `commitment` field
 is the commitment to the update at that leaf. The `inclusion` field of
 `SearchProof` contains a batch inclusion proof for all of the leaves accessed by
@@ -986,13 +988,8 @@ struct {
 } FullTreeHead;
 
 struct {
-  opaque index<VRF.Nh>;
-  opaque proof<0..2^16-1>;
-} VRFResult;
-
-struct {
   FullTreeHead full_tree_head;
-  VRFResult vrf_result;
+  opaque vrf_proof<0..2^16-1>;
   SearchProof search;
 
   opaque opening<16>;
@@ -1006,8 +1003,8 @@ between the current tree and the tree when it was this size, in the
 
 Users verify a search response by following these steps:
 
-1. Verify the VRF proof in `VRFResult.proof` against the requested search key
-   `SearchRequest.search_key` and the claimed VRF output `VRFResult.index`.
+1. Evaluate the VRF proof in `vrf_proof` against the requested search key
+   `SearchRequest.search_key` to obtain the search index.
 2. Evaluate the search proof in `search` according to the steps in
    {{proof-combined-tree}}. This will produce a verdict as to whether the search
    was executed correctly, and also a candidate root value for the tree. If it's
@@ -1062,7 +1059,7 @@ adds the new key-value pair to the log and returns an UpdateResponse structure:
 ~~~ tls-presentation
 struct {
   FullTreeHead full_tree_head;
-  VRFResult vrf_result;
+  opaque vrf_proof<0..2^16-1>;
   SearchProof search;
 
   opaque opening<16>;
@@ -1071,9 +1068,9 @@ struct {
 ~~~
 
 Users verify the UpdateResponse as if it were a SearchResponse for the most
-recent version of `search_key`, and they also check that their update is the
-last entry in the log. To aid verification, the update response provides the
-`UpdatePrefix` structure necessary to reconstruct the `UpdateValue`.
+recent version of `search_key`. To aid verification, the update response
+provides the `UpdatePrefix` structure necessary to reconstruct the
+`UpdateValue`.
 
 Users MUST retain the information required to perform monitoring as described in
 {{search}}.
@@ -1104,7 +1101,7 @@ wants a higher degree of confidence in the log), they also include any keys
 they've looked up in `contact_keys`.
 
 Each `MonitorKey` structure contains the key being monitored in `search_key`,
-and a list of entries in the log tree corresponding to the values of the map
+and a list of entries in the log tree corresponding to the keys of the map
 described in {{monitoring}}.
 
 The Transparency Log verifies the MonitorRequest by following these steps, for
@@ -1124,19 +1121,14 @@ structure:
 
 ~~~ tls-presentation
 struct {
-  PrefixProof prefix_proof;
-  opaque commitment<Hash.Nh>;
-} MonitorProofStep;
-
-struct {
-  MonitorProofStep steps<0..2^8-1>;
-  InclusionProof inclusion;
+  ProofStep steps<0..2^8-1>;
 } MonitorProof;
 
 struct {
   FullTreeHead full_tree_head;
   MonitorProof owned_proofs<0..2^8-1>;
   MonitorProof contact_proofs<0..2^8-1>;
+  InclusionProof inclusion;
 } MonitorResponse;
 ~~~
 
@@ -1159,14 +1151,14 @@ Users verify a MonitorResponse by following these steps:
 
 1. Verify that the lengths of `owned_proofs` and `contact_proofs` are the same
    as the lengths of `owned_keys` and `contact_keys`.
-2. For each `MonitorProof` structure:
-   1. Evalute the monitoring algorithm in {{monitoring}}. Abort with an error if
-      the monitoring algorithm detects that the tree is constructed incorrectly,
-      or if there are fewer or more steps provided than would be expected.
-   2. Construct a candidate root value for the tree by combining the
-      `PrefixProof` and commitment of each step, with the provided inclusion
-      proof.
-3. Verify that all of the candidate root values are the same. With the candidate
+2. For each `MonitorProof` structure, evalute the monitoring algorithm in
+   {{monitoring}}. Abort with an error if the monitoring algorithm detects that
+   the tree is constructed incorrectly, or if there are fewer or more steps
+   provided than would be expected.
+3. Construct a candidate root value for the tree by combining the
+   `PrefixProof` and commitment of `ProofStep`, with the provided inclusion
+   proof.
+4. Verify that all of the candidate root values are the same. With the candidate
    root value:
    1. Verify the proof in `FullTreeHead.consistency`, if one is expected.
    2. Verify the signature in `TreeHead.signature`.
@@ -1178,7 +1170,7 @@ Users verify a MonitorResponse by following these steps:
 
 Some information is omitted from MonitorResponse in the interest of efficiency,
 due to the fact that the user would have already seen and verified it as part of
-conducting other queries. In particular, the VRF output and proof for each
+conducting other queries. In particular, the VRF proof for each
 search key is not provided, or each key's initial position in the log, given
 that both of these can be cached from the original Search or Update query for
 the key.
@@ -1322,30 +1314,36 @@ corresponding to `Configuration.auditor_public_key`, over the serialized
 number of entries processed by the auditor and the `timestamp` field is set to
 the time the signature was produced (in milliseconds since the Unix epoch).
 
-The auditor `TreeHead` from this response is provided to users wrapped in the
-following struct:
+The auditor `TreeHead` from this response is provided to users wrapped in an
+`AuditorTreeHead` struct:
 
 ~~~ tls-presentation
 struct {
-  TreeHead tree_head;
   opaque root_value<Hash.Nh>;
   ConsistencyProof consistency;
+} AuditorContext;
+
+struct {
+  TreeHead tree_head;
+  optional<AuditorContext> context;
 } AuditorTreeHead;
 ~~~
 
-The `root_value` field contains the root hash of the tree at the point that the
-signature was produced and `consistency` contains a consistency proof between
-the tree at this point and the most recent `TreeHead` provided by the service
-operator.
+The `context` field is populated when the `tree_size` of the auditor's
+`TreeHead` is less than the size of the most recent `TreeHead` provied to the
+user by the service provider. The `root_value` field contains the root hash of
+the tree at the point that the signature was produced and `consistency` contains
+a consistency proof between the tree at this point and the most recent
+`TreeHead` provided by the service operator.
 
 To check that an `AuditorTreeHead` structure is valid, users follow these steps:
 
 1. Verify the signature in `TreeHead.signature`.
 2. Verify that `TreeHead.timestamp` is sufficiently recent.
-3. Verify that `TreeHead.tree_size` is sufficiently close to the most recent
-   tree head from the service operator.
-4. Verify the consistency proof `consistency` between this tree head and the
-   most recent tree head from the service operator.
+3. Verify that `TreeHead.tree_size` is less than or equal to, and sufficiently
+   close to the most recent tree head from the service operator.
+4. If required, verify the consistency proof `AuditorContext.consistency`
+   between this tree head and the most recent tree head from the service operator.
 
 
 <!-- # Owner Signing
