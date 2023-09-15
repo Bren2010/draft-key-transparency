@@ -1277,6 +1277,31 @@ that they were added to the log tree:
 ~~~ tls-presentation
 enum {
   reserved(0),
+  newTree(1),
+  emptyTree(2),
+  differentKey(3),
+  sameKey(4),
+  (255)
+} AuditorProofType;
+
+struct {
+  AuditorProofType proof_type;
+  select (AuditorProof.proof_type) {
+    case newTree:
+    case emptyTree:
+      opaque old_seed<16>;
+    case differentKey:
+      NodeValue copath<0..2^8-1>;
+      opaque old_seed<16>;
+    case sameKey:
+      NodeValue copath<0..2^8-1>;
+      uint32 counter;
+      uint64 position;
+  };
+} AuditorProof;
+
+enum {
+  reserved(0),
   real(1),
   fake(2),
   (255)
@@ -1287,6 +1312,7 @@ struct {
   opaque index<VRF.Nh>;
   opaque seed<16>;
   opaque commitment<Hash.Nh>;
+  AuditorProof proof;
 } AuditorUpdate;
 
 struct {
@@ -1295,12 +1321,47 @@ struct {
 ~~~
 
 The `update_type` field of each `AuditorUpdate` specifies whether the update was
-real or fake (see {{obscuring-update-rate}}). Real updates genuinely affect a leaf node of the prefix tree,
-while fake updates only change the random stand-in value for a non-existent
-child. The `index` field contains the VRF output of the search key that
-was updated, `seed` contains the seed used to compute new random stand-in values
-for non-existent children in the prefix tree, and `commitment` contains the
-service provider's commitment to the update. The auditor responds with:
+real or fake (see {{obscuring-update-rate}}). Real updates genuinely affect a
+leaf node of the prefix tree, while fake updates only change the random stand-in
+value for a non-existent child. The `index` field contains the VRF output of the
+search key that was updated, `seed` contains the seed used to compute new random
+stand-in values for non-existent children in the prefix tree, and `commitment`
+contains the service provider's commitment to the update. The `proof` field
+contains a cryptographic proof with the information necessary to compute both
+the current prefix tree root value, and the prefix tree root value after the
+update has been applied.
+
+The `AuditorProof` structure represents the result of searching for
+`AuditorUpdate.index` in the prefix tree. The `proof_type` field specifies
+whether the search results in:
+
+- `newTree`: no search was done because this is the first modification to the tree.
+- `emptyTree`: no search was done because there are no populated leaf nodes in
+  the prefix tree, though there's a stand-in value for the root which can be
+  computed with `old_seed`.
+- `differentKey`: the search terminates at a stand-in value in the copath of
+  another key. The copath for `AuditorUpdate.index`, up to and including the
+  first bit difference between the two keys, is given in `copath`. The seed for
+  computing the stand-in value is provided in `old_seed`.
+- `sameKey`: the search terminates at a populated leaf node for
+  `AuditorUpdate.index`. The copath (excluding stand-in values, which can be
+  computed with `AuditorUpdate.seed`) is given in `copath`. The `version` and
+  `position` fields of the leaf node are also given.
+
+An auditor processes a single `AuditorUpdate` by following these steps:
+
+1. Evaluate the provided `AuditorProof` and verify that it's consistent with the
+   current prefix tree root.
+2. Use the information in the proof, along with `AuditorUpdate.seed`, to
+   determine the new prefix tree root. The auditor MUST return an error and
+   refuse to continue if the `proof_type` field is `sameKey` but the
+   `update_type` is `fake`.
+3. Combine the new prefix tree root with the provided `commitment` to produce
+   the leaf hash value.
+4. Combine the leaf hash value with the current log root to produce the new log
+   root.
+
+With all `AuditorUpdate` structures processed, the auditor responds with:
 
 ~~~
 struct {
