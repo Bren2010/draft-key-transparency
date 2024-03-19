@@ -1,0 +1,423 @@
+{
+  "magic": "E!vIA5L86J2I",
+  "timestamp": "2024-03-19T00:11:01.911988+00:00",
+  "repo": "Bren2010/draft-key-transparency",
+  "labels": [
+    {
+      "name": "bug",
+      "description": "Something isn't working",
+      "color": "d73a4a"
+    },
+    {
+      "name": "documentation",
+      "description": "Improvements or additions to documentation",
+      "color": "0075ca"
+    },
+    {
+      "name": "duplicate",
+      "description": "This issue or pull request already exists",
+      "color": "cfd3d7"
+    },
+    {
+      "name": "enhancement",
+      "description": "New feature or request",
+      "color": "a2eeef"
+    },
+    {
+      "name": "good first issue",
+      "description": "Good for newcomers",
+      "color": "7057ff"
+    },
+    {
+      "name": "help wanted",
+      "description": "Extra attention is needed",
+      "color": "008672"
+    },
+    {
+      "name": "invalid",
+      "description": "This doesn't seem right",
+      "color": "e4e669"
+    },
+    {
+      "name": "question",
+      "description": "Further information is requested",
+      "color": "d876e3"
+    },
+    {
+      "name": "wontfix",
+      "description": "This will not be worked on",
+      "color": "ffffff"
+    }
+  ],
+  "issues": [
+    {
+      "number": 1,
+      "id": "I_kwDOI2uTjc5f9ugp",
+      "title": "Omitting values that client has already seen in Monitor operations doesn't work correctly",
+      "url": "https://github.com/Bren2010/draft-key-transparency/issues/1",
+      "state": "CLOSED",
+      "author": "Bren2010",
+      "authorAssociation": "OWNER",
+      "assignees": [],
+      "labels": [],
+      "body": "I don't think it actually works to base what values can be omitted on the `last` field.",
+      "createdAt": "2023-03-05T01:42:50Z",
+      "updatedAt": "2023-04-19T16:06:22Z",
+      "closedAt": "2023-04-19T16:06:22Z",
+      "comments": []
+    },
+    {
+      "number": 2,
+      "id": "I_kwDOI2uTjc5f9ujU",
+      "title": "Monitor doesn't correctly handle when a user has been shown multiple new versions of a key between monitoring operations",
+      "url": "https://github.com/Bren2010/draft-key-transparency/issues/2",
+      "state": "CLOSED",
+      "author": "Bren2010",
+      "authorAssociation": "OWNER",
+      "assignees": [],
+      "labels": [],
+      "body": "We can't stop monitoring an old version of the key until it's direct path converges with a newer version.",
+      "createdAt": "2023-03-05T01:43:35Z",
+      "updatedAt": "2023-04-19T16:06:36Z",
+      "closedAt": "2023-04-19T16:06:36Z",
+      "comments": []
+    },
+    {
+      "number": 3,
+      "id": "I_kwDOI2uTjc5f9vCC",
+      "title": "Feedback from Thibault",
+      "url": "https://github.com/Bren2010/draft-key-transparency/issues/3",
+      "state": "CLOSED",
+      "author": "Bren2010",
+      "authorAssociation": "OWNER",
+      "assignees": [],
+      "labels": [],
+      "body": "- [x] Still need to write section on out-of-band checking / anonymous access to KT server.\r\n- [ ] When a malicious update gets added, there's no way to tell if the key owner or service operator did it.\r\n- [ ] Would be nice to think about streaming verification. Or at least give real numbers on proof size if streaming is not necessary.",
+      "createdAt": "2023-03-05T01:52:43Z",
+      "updatedAt": "2023-04-14T21:00:44Z",
+      "closedAt": "2023-04-14T21:00:44Z",
+      "comments": [
+        {
+          "author": "Bren2010",
+          "authorAssociation": "OWNER",
+          "body": "The `AuditorRequest` seems like the best candidate for streaming, and it's also already written in a way that it would be pretty easy to parallelize if needed. Not sure that this warrants pointing out explicitly given that it's an implementation detail and not relevant to the protocol.",
+          "createdAt": "2023-04-14T21:00:04Z",
+          "updatedAt": "2023-04-14T21:00:34Z"
+        }
+      ]
+    },
+    {
+      "number": 4,
+      "id": "I_kwDOI2uTjc5gGWP3",
+      "title": "Add worked examples of adding new entries to the combined tree structure",
+      "url": "https://github.com/Bren2010/draft-key-transparency/issues/4",
+      "state": "CLOSED",
+      "author": "Bren2010",
+      "authorAssociation": "OWNER",
+      "assignees": [],
+      "labels": [],
+      "body": "",
+      "createdAt": "2023-03-06T22:02:15Z",
+      "updatedAt": "2023-04-28T17:30:40Z",
+      "closedAt": "2023-04-28T17:30:40Z",
+      "comments": []
+    },
+    {
+      "number": 5,
+      "id": "I_kwDOI2uTjc5gGXWk",
+      "title": "Quantify how quickly contact monitoring detects malicious behavior",
+      "url": "https://github.com/Bren2010/draft-key-transparency/issues/5",
+      "state": "OPEN",
+      "author": "Bren2010",
+      "authorAssociation": "OWNER",
+      "assignees": [],
+      "labels": [],
+      "body": "",
+      "createdAt": "2023-03-06T22:05:59Z",
+      "updatedAt": "2023-03-06T22:05:59Z",
+      "closedAt": null,
+      "comments": []
+    },
+    {
+      "number": 6,
+      "id": "I_kwDOI2uTjc5gGemN",
+      "title": "Ability to switch between or mix-and-match deployment modes",
+      "url": "https://github.com/Bren2010/draft-key-transparency/issues/6",
+      "state": "CLOSED",
+      "author": "Bren2010",
+      "authorAssociation": "OWNER",
+      "assignees": [],
+      "labels": [],
+      "body": "Multiple people have flagged that this would be operationally very nice to have, but it would need to be done in a way that preserves the system's security properties.",
+      "createdAt": "2023-03-06T22:26:46Z",
+      "updatedAt": "2023-04-13T23:13:58Z",
+      "closedAt": "2023-04-13T23:13:58Z",
+      "comments": []
+    },
+    {
+      "number": 7,
+      "id": "I_kwDOI2uTjc5gGmbX",
+      "title": "Discuss hiding the number of stored keys.",
+      "url": "https://github.com/Bren2010/draft-key-transparency/issues/7",
+      "state": "CLOSED",
+      "author": "Bren2010",
+      "authorAssociation": "OWNER",
+      "assignees": [],
+      "labels": [],
+      "body": "The number of stored keys in a KT server can be interpreted as the number of users of a service. Many service operators might consider this number very sensitive. Need to think about ways to best obscure it, and write that up.\r\n\r\nOne good option would be multi-tenancy -- that is, having multiple service providers share the same KT log. Maybe could also change the format of prefix tree proofs.",
+      "createdAt": "2023-03-06T22:44:58Z",
+      "updatedAt": "2023-04-18T22:58:21Z",
+      "closedAt": "2023-04-18T22:58:21Z",
+      "comments": []
+    },
+    {
+      "number": 8,
+      "id": "I_kwDOI2uTjc5iJJjM",
+      "title": "Add note on e2e identity",
+      "url": "https://github.com/Bren2010/draft-key-transparency/issues/8",
+      "state": "OPEN",
+      "author": "Bren2010",
+      "authorAssociation": "OWNER",
+      "assignees": [],
+      "labels": [],
+      "body": "Re: mimi draft",
+      "createdAt": "2023-03-29T21:31:00Z",
+      "updatedAt": "2023-03-29T21:31:00Z",
+      "closedAt": null,
+      "comments": []
+    },
+    {
+      "number": 9,
+      "id": "I_kwDOI2uTjc5jX01A",
+      "title": "Secure compaction",
+      "url": "https://github.com/Bren2010/draft-key-transparency/issues/9",
+      "state": "CLOSED",
+      "author": "Bren2010",
+      "authorAssociation": "OWNER",
+      "assignees": [],
+      "labels": [],
+      "body": "",
+      "createdAt": "2023-04-13T22:01:47Z",
+      "updatedAt": "2023-04-27T15:16:36Z",
+      "closedAt": "2023-04-27T15:16:36Z",
+      "comments": [
+        {
+          "author": "Bren2010",
+          "authorAssociation": "OWNER",
+          "body": "Current thoughts on secure compaction: We can just migrate to a new log if the previous one gets too big?",
+          "createdAt": "2023-04-20T01:22:27Z",
+          "updatedAt": "2023-04-20T01:22:27Z"
+        }
+      ]
+    },
+    {
+      "number": 10,
+      "id": "I_kwDOI2uTjc5jX1cK",
+      "title": "Proofs that can be embedded into certificates",
+      "url": "https://github.com/Bren2010/draft-key-transparency/issues/10",
+      "state": "OPEN",
+      "author": "Bren2010",
+      "authorAssociation": "OWNER",
+      "assignees": [],
+      "labels": [],
+      "body": "KT currently assumes that all lookup requests happen interactively with the server. Some systems want to provide sender anonymity, which means the recipient user can't lookup the sender's public key themself (this would leak sender-recipient pairs to the server). There should be some kind of certificate-like, non-interactive lookup proof.",
+      "createdAt": "2023-04-13T22:04:11Z",
+      "updatedAt": "2023-04-13T22:04:11Z",
+      "closedAt": null,
+      "comments": []
+    },
+    {
+      "number": 11,
+      "id": "I_kwDOI2uTjc5jeaeT",
+      "title": "SearchResult -> SearchResponse, UpdateResult -> UpdateResponse",
+      "url": "https://github.com/Bren2010/draft-key-transparency/issues/11",
+      "state": "CLOSED",
+      "author": "Bren2010",
+      "authorAssociation": "OWNER",
+      "assignees": [],
+      "labels": [],
+      "body": "",
+      "createdAt": "2023-04-14T20:32:17Z",
+      "updatedAt": "2023-04-14T21:07:17Z",
+      "closedAt": "2023-04-14T21:07:17Z",
+      "comments": []
+    },
+    {
+      "number": 12,
+      "id": "I_kwDOI2uTjc5jeakp",
+      "title": "TreeHead may be either before or after `last`?",
+      "url": "https://github.com/Bren2010/draft-key-transparency/issues/12",
+      "state": "CLOSED",
+      "author": "Bren2010",
+      "authorAssociation": "OWNER",
+      "assignees": [],
+      "labels": [],
+      "body": "",
+      "createdAt": "2023-04-14T20:32:45Z",
+      "updatedAt": "2023-04-19T16:07:02Z",
+      "closedAt": "2023-04-19T16:07:02Z",
+      "comments": []
+    },
+    {
+      "number": 13,
+      "id": "I_kwDOI2uTjc5jgeDD",
+      "title": "Prefix tree -> Lookup tree",
+      "url": "https://github.com/Bren2010/draft-key-transparency/issues/13",
+      "state": "CLOSED",
+      "author": "Bren2010",
+      "authorAssociation": "OWNER",
+      "assignees": [],
+      "labels": [],
+      "body": "",
+      "createdAt": "2023-04-15T15:31:30Z",
+      "updatedAt": "2023-04-19T16:07:39Z",
+      "closedAt": "2023-04-19T16:07:39Z",
+      "comments": [
+        {
+          "author": "Bren2010",
+          "authorAssociation": "OWNER",
+          "body": "I don't think I care enough to really do this",
+          "createdAt": "2023-04-19T16:07:39Z",
+          "updatedAt": "2023-04-19T16:07:39Z"
+        }
+      ]
+    },
+    {
+      "number": 14,
+      "id": "I_kwDOI2uTjc5jrfLK",
+      "title": "Need to introduce implicit/array binary tree",
+      "url": "https://github.com/Bren2010/draft-key-transparency/issues/14",
+      "state": "CLOSED",
+      "author": "Bren2010",
+      "authorAssociation": "OWNER",
+      "assignees": [],
+      "labels": [],
+      "body": "The example in the Combined Tree section is wrong",
+      "createdAt": "2023-04-18T04:50:24Z",
+      "updatedAt": "2023-04-18T22:51:39Z",
+      "closedAt": "2023-04-18T22:51:39Z",
+      "comments": []
+    },
+    {
+      "number": 15,
+      "id": "I_kwDOI2uTjc5j2cjE",
+      "title": "Add section on obscuring update rate",
+      "url": "https://github.com/Bren2010/draft-key-transparency/issues/15",
+      "state": "CLOSED",
+      "author": "Bren2010",
+      "authorAssociation": "OWNER",
+      "assignees": [],
+      "labels": [],
+      "body": "",
+      "createdAt": "2023-04-19T16:08:27Z",
+      "updatedAt": "2023-04-27T17:56:23Z",
+      "closedAt": "2023-04-27T17:56:23Z",
+      "comments": []
+    },
+    {
+      "number": 16,
+      "id": "I_kwDOI2uTjc5j2gz5",
+      "title": "Write up Owner Signing",
+      "url": "https://github.com/Bren2010/draft-key-transparency/issues/16",
+      "state": "OPEN",
+      "author": "Bren2010",
+      "authorAssociation": "OWNER",
+      "assignees": [],
+      "labels": [],
+      "body": "",
+      "createdAt": "2023-04-19T16:21:36Z",
+      "updatedAt": "2023-04-19T16:21:36Z",
+      "closedAt": null,
+      "comments": []
+    },
+    {
+      "number": 17,
+      "id": "I_kwDOI2uTjc5j9i4d",
+      "title": "Fix third-party auditing",
+      "url": "https://github.com/Bren2010/draft-key-transparency/issues/17",
+      "state": "CLOSED",
+      "author": "Bren2010",
+      "authorAssociation": "OWNER",
+      "assignees": [],
+      "labels": [],
+      "body": "Doesn't handle stand-in values, or when chaff is added to the tree.",
+      "createdAt": "2023-04-20T16:49:15Z",
+      "updatedAt": "2023-04-20T16:57:47Z",
+      "closedAt": "2023-04-20T16:57:47Z",
+      "comments": []
+    },
+    {
+      "number": 18,
+      "id": "I_kwDOI2uTjc5kdTGg",
+      "title": "Lookup key must specifically be user-facing identifier",
+      "url": "https://github.com/Bren2010/draft-key-transparency/issues/18",
+      "state": "OPEN",
+      "author": "Bren2010",
+      "authorAssociation": "OWNER",
+      "assignees": [],
+      "labels": [],
+      "body": "Maybe not? We need to write an applicability statement on how to use KT for username -> public key bindings and really think through that. But the protocol can generally be for a lot of things.",
+      "createdAt": "2023-04-26T17:00:48Z",
+      "updatedAt": "2023-04-26T17:37:39Z",
+      "closedAt": null,
+      "comments": []
+    },
+    {
+      "number": 19,
+      "id": "I_kwDOI2uTjc5kjz0e",
+      "title": "How to make sure that third-party auditor eventually catches up with published STH?",
+      "url": "https://github.com/Bren2010/draft-key-transparency/issues/19",
+      "state": "CLOSED",
+      "author": "Bren2010",
+      "authorAssociation": "OWNER",
+      "assignees": [],
+      "labels": [],
+      "body": "",
+      "createdAt": "2023-04-27T15:40:10Z",
+      "updatedAt": "2023-05-14T23:09:34Z",
+      "closedAt": "2023-05-14T23:09:34Z",
+      "comments": [
+        {
+          "author": "Bren2010",
+          "authorAssociation": "OWNER",
+          "body": "I think only defense here is just to keep the limits relatively (to the log's normal operation) small on how far behind a third-party auditor can be. This way, a service operator that cheats will be forced into non-operation quickly",
+          "createdAt": "2023-05-14T23:05:08Z",
+          "updatedAt": "2023-05-14T23:05:08Z"
+        }
+      ]
+    },
+    {
+      "number": 20,
+      "id": "I_kwDOI2uTjc5krPw5",
+      "title": "Update commitment specification to have user id",
+      "url": "https://github.com/Bren2010/draft-key-transparency/issues/20",
+      "state": "CLOSED",
+      "author": "Bren2010",
+      "authorAssociation": "OWNER",
+      "assignees": [],
+      "labels": [],
+      "body": "",
+      "createdAt": "2023-04-28T19:52:01Z",
+      "updatedAt": "2023-05-14T22:57:48Z",
+      "closedAt": "2023-05-14T22:57:48Z",
+      "comments": []
+    },
+    {
+      "number": 21,
+      "id": "I_kwDOI2uTjc5mESD9",
+      "title": "Once a user looks up a key, it should always be able to continue monitoring it",
+      "url": "https://github.com/Bren2010/draft-key-transparency/issues/21",
+      "state": "OPEN",
+      "author": "Bren2010",
+      "authorAssociation": "OWNER",
+      "assignees": [],
+      "labels": [],
+      "body": "Access control policy can't change(?)",
+      "createdAt": "2023-05-16T17:02:02Z",
+      "updatedAt": "2023-05-16T17:02:02Z",
+      "closedAt": null,
+      "comments": []
+    }
+  ],
+  "pulls": []
+}
