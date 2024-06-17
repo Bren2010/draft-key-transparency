@@ -2318,9 +2318,19 @@ version, and <code>value</code> contains the same contents as <code>UpdateValue.
 <p id="section-10-1">The basic user operations are organized as a request-response protocol between a
 user and the Transparency Log operator. Generally, users <span class="bcp14">MUST</span> retain the most
 recent <code>TreeHead</code> they've successfully verified as part of any query response,
-and populate the <code>last</code> field of any query request with the <code>tree_size</code> from
-this <code>TreeHead</code>. This ensures that all operations performed by the user return
-consistent results.<a href="#section-10-1" class="pilcrow">¶</a></p>
+and populate the <code>consistency</code> field of any query request with the <code>tree_size</code>
+from this <code>TreeHead</code>. This ensures that all operations performed by the user
+return consistent results.<a href="#section-10-1" class="pilcrow">¶</a></p>
+<div class="lang-tls-presentation sourcecode" id="section-10-2">
+<pre>
+struct {
+  uint64 last;
+  optional&lt;uint64&gt; distinguished;
+} Consistency;
+</pre><a href="#section-10-2" class="pilcrow">¶</a>
+</div>
+<p id="section-10-3">Users may optionally also populate the <code>distinguished</code> field to request an
+additional consistency proof with a distinguished tree head.<a href="#section-10-3" class="pilcrow">¶</a></p>
 <div id="search">
 <section id="section-10.1">
         <h3 id="name-search">
@@ -2329,14 +2339,13 @@ consistent results.<a href="#section-10-1" class="pilcrow">¶</a></p>
 <p id="section-10.1-1">Users initiate a Search operation by submitting a SearchRequest to the
 Transparency Log containing the key that they're interested in. Users can
 optionally specify a version of the key that they'd like to receive, if not the
-most recent one. They can also include the <code>tree_size</code> of the last TreeHead that
-they successfully verified.<a href="#section-10.1-1" class="pilcrow">¶</a></p>
+most recent one.<a href="#section-10.1-1" class="pilcrow">¶</a></p>
 <div class="lang-tls-presentation sourcecode" id="section-10.1-2">
 <pre>
 struct {
   opaque search_key&lt;0..2^8-1&gt;;
   optional&lt;uint32&gt; version;
-  optional&lt;uint64&gt; last;
+  optional&lt;Consistency&gt; consistency;
 } SearchRequest;
 </pre><a href="#section-10.1-2" class="pilcrow">¶</a>
 </div>
@@ -2346,6 +2355,7 @@ struct {
 struct {
   TreeHead tree_head;
   optional&lt;ConsistencyProof&gt; consistency;
+  optional&lt;ConsistencyProof&gt; distinguished;
   select (Configuration.mode) {
     case thirdPartyAuditing:
       AuditorTreeHead auditor_tree_head;
@@ -2362,9 +2372,13 @@ struct {
 } SearchResponse;
 </pre><a href="#section-10.1-4" class="pilcrow">¶</a>
 </div>
-<p id="section-10.1-5">If <code>last</code> is present, then the Transparency Log <span class="bcp14">MUST</span> provide a consistency proof
-between the current tree and the tree when it was this size, in the
-<code>consistency</code> field of <code>FullTreeHead</code>.<a href="#section-10.1-5" class="pilcrow">¶</a></p>
+<p id="section-10.1-5">If <code>consistency</code> is present, then the Transparency Log <span class="bcp14">MUST</span> provide a
+consistency proof between the current tree and the tree when it had
+<code>Consistency.last</code> entries, in the <code>consistency</code> field of <code>FullTreeHead</code>. If
+<code>consistency</code> is present, and its <code>distinguished</code> field is present, then the
+Transparency Log <span class="bcp14">MUST</span> provide a consistency proof between the current tree and
+the tree when it had <code>Consistency.distinguished</code> entries, in the <code>distinguished</code>
+field of <code>FullTreeHead</code>.<a href="#section-10.1-5" class="pilcrow">¶</a></p>
 <p id="section-10.1-6">Users verify a search response by following these steps:<a href="#section-10.1-6" class="pilcrow">¶</a></p>
 <ol start="1" type="1" class="normal type-1" id="section-10.1-7">
 <li id="section-10.1-7.1">
@@ -2428,15 +2442,13 @@ required.<a href="#section-10.1-9" class="pilcrow">¶</a></p>
 <a href="#section-10.2" class="section-number selfRef">10.2. </a><a href="#name-update" class="section-name selfRef">Update</a>
         </h3>
 <p id="section-10.2-1">Users initiate an Update operation by submitting an UpdateRequest to the
-Transparency Log containing the new key and value to store. Users can also
-optionally include the <code>tree_size</code> of the last TreeHead that they successfully
-verified.<a href="#section-10.2-1" class="pilcrow">¶</a></p>
+Transparency Log containing the new key and value to store.<a href="#section-10.2-1" class="pilcrow">¶</a></p>
 <div class="lang-tls-presentation sourcecode" id="section-10.2-2">
 <pre>
 struct {
   opaque search_key&lt;0..2^8-1&gt;;
   opaque value&lt;0..2^32-1&gt;;
-  optional&lt;uint64&gt; last;
+  optional&lt;Consistency&gt; consistency;
 } UpdateRequest;
 </pre><a href="#section-10.2-2" class="pilcrow">¶</a>
 </div>
@@ -2468,9 +2480,7 @@ provides the <code>UpdatePrefix</code> structure necessary to reconstruct the
 <a href="#section-10.3" class="section-number selfRef">10.3. </a><a href="#name-monitor" class="section-name selfRef">Monitor</a>
         </h3>
 <p id="section-10.3-1">Users initiate a Monitor operation by submitting a MonitorRequest to the
-Transparency Log containing information about the keys they wish to monitor.
-Similar to Search and Update operations, users can include the <code>tree_size</code> of
-the last TreeHead that they successfully verified.<a href="#section-10.3-1" class="pilcrow">¶</a></p>
+Transparency Log containing information about the keys they wish to monitor.<a href="#section-10.3-1" class="pilcrow">¶</a></p>
 <div class="lang-tls-presentation sourcecode" id="section-10.3-2">
 <pre>
 struct {
@@ -2481,7 +2491,7 @@ struct {
 struct {
   MonitorKey owned_keys&lt;0..2^8-1&gt;;
   MonitorKey contact_keys&lt;0..2^8-1&gt;;
-  optional&lt;uint64&gt; last;
+  optional&lt;Consistency&gt; consistency;
 } MonitorRequest;
 </pre><a href="#section-10.3-2" class="pilcrow">¶</a>
 </div>
@@ -2848,8 +2858,8 @@ successfully on its own but doesn't match a user's view of the log, this proves
 the existence of a fork.<a href="#section-12.1-4" class="pilcrow">¶</a></p>
 <p id="section-12.1-5">With anonymous communication, a user first obtains a "distinguished" <code>TreeHead</code>.
 They then send the same request, omitting any identifying information and
-leaving the <code>last</code> field empty, over an anonymous channel. If the log responds
-with a different <code>TreeHead</code> over the anonymous channel, this proves the
+leaving the <code>consistency</code> field empty, over an anonymous channel. If the log
+responds with a different <code>TreeHead</code> over the anonymous channel, this proves the
 existence of a fork.<a href="#section-12.1-5" class="pilcrow">¶</a></p>
 <p id="section-12.1-6">In the event that a fork is successfully detected, the two signatures on the
 differing views of the log provide non-repudiable proof of log misbehavior which

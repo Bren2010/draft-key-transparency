@@ -1051,22 +1051,29 @@ Table of Contents
    protocol between a user and the Transparency Log operator.
    Generally, users MUST retain the most recent TreeHead they've
    successfully verified as part of any query response, and populate the
-   last field of any query request with the tree_size from this
+   consistency field of any query request with the tree_size from this
    TreeHead.  This ensures that all operations performed by the user
    return consistent results.
+
+   struct {
+     uint64 last;
+     optional<uint64> distinguished;
+   } Consistency;
+
+   Users may optionally also populate the distinguished field to request
+   an additional consistency proof with a distinguished tree head.
 
 10.1.  Search
 
    Users initiate a Search operation by submitting a SearchRequest to
    the Transparency Log containing the key that they're interested in.
    Users can optionally specify a version of the key that they'd like to
-   receive, if not the most recent one.  They can also include the
-   tree_size of the last TreeHead that they successfully verified.
+   receive, if not the most recent one.
 
    struct {
      opaque search_key<0..2^8-1>;
      optional<uint32> version;
-     optional<uint64> last;
+     optional<Consistency> consistency;
    } SearchRequest;
 
    In turn, the Transparency Log responds with a SearchResponse
@@ -1075,6 +1082,7 @@ Table of Contents
    struct {
      TreeHead tree_head;
      optional<ConsistencyProof> consistency;
+     optional<ConsistencyProof> distinguished;
      select (Configuration.mode) {
        case thirdPartyAuditing:
          AuditorTreeHead auditor_tree_head;
@@ -1090,9 +1098,13 @@ Table of Contents
      UpdateValue value;
    } SearchResponse;
 
-   If last is present, then the Transparency Log MUST provide a
-   consistency proof between the current tree and the tree when it was
-   this size, in the consistency field of FullTreeHead.
+   If consistency is present, then the Transparency Log MUST provide a
+   consistency proof between the current tree and the tree when it had
+   Consistency.last entries, in the consistency field of FullTreeHead.
+   If consistency is present, and its distinguished field is present,
+   then the Transparency Log MUST provide a consistency proof between
+   the current tree and the tree when it had Consistency.distinguished
+   entries, in the distinguished field of FullTreeHead.
 
    Users verify a search response by following these steps:
 
@@ -1148,13 +1160,11 @@ Table of Contents
 
    Users initiate an Update operation by submitting an UpdateRequest to
    the Transparency Log containing the new key and value to store.
-   Users can also optionally include the tree_size of the last TreeHead
-   that they successfully verified.
 
    struct {
      opaque search_key<0..2^8-1>;
      opaque value<0..2^32-1>;
-     optional<uint64> last;
+     optional<Consistency> consistency;
    } UpdateRequest;
 
    If the request is acceptable by application-layer policies, the
@@ -1182,9 +1192,7 @@ Table of Contents
 
    Users initiate a Monitor operation by submitting a MonitorRequest to
    the Transparency Log containing information about the keys they wish
-   to monitor.  Similar to Search and Update operations, users can
-   include the tree_size of the last TreeHead that they successfully
-   verified.
+   to monitor.
 
    struct {
      opaque search_key<0..2^8-1>;
@@ -1194,7 +1202,7 @@ Table of Contents
    struct {
      MonitorKey owned_keys<0..2^8-1>;
      MonitorKey contact_keys<0..2^8-1>;
-     optional<uint64> last;
+     optional<Consistency> consistency;
    } MonitorRequest;
 
    Users include each of the keys that they own in owned_keys.  If the
@@ -1533,9 +1541,9 @@ Table of Contents
 
    With anonymous communication, a user first obtains a "distinguished"
    TreeHead.  They then send the same request, omitting any identifying
-   information and leaving the last field empty, over an anonymous
-   channel.  If the log responds with a different TreeHead over the
-   anonymous channel, this proves the existence of a fork.
+   information and leaving the consistency field empty, over an
+   anonymous channel.  If the log responds with a different TreeHead
+   over the anonymous channel, this proves the existence of a fork.
 
    In the event that a fork is successfully detected, the two signatures
    on the differing views of the log provide non-repudiable proof of log
