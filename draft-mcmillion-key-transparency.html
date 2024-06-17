@@ -2392,10 +2392,8 @@ was executed correctly, and also a candidate root value for the tree. If it's
 determined that the search was executed incorrectly, abort with an error.<a href="#section-10.1-7.2.1" class="pilcrow">¶</a></p>
 </li>
           <li id="section-10.1-7.3">
-            <p id="section-10.1-7.3.1">If the user has monitoring information for this search key (because they own
-it or are performing Contact Monitoring), verify that <code>SearchProof.position</code>
-is the same as in previous requests, and that the entry's version and
-position in the log are consistent with other known versions.<a href="#section-10.1-7.3.1" class="pilcrow">¶</a></p>
+            <p id="section-10.1-7.3.1">Verify that the commitment in the terminal search step opens to
+<code>SearchResponse.value</code> with opening <code>SearchResponse.opening</code>.<a href="#section-10.1-7.3.1" class="pilcrow">¶</a></p>
 </li>
           <li id="section-10.1-7.4">
             <p id="section-10.1-7.4.1">With the candidate root value for the tree:<a href="#section-10.1-7.4.1" class="pilcrow">¶</a></p>
@@ -2418,8 +2416,10 @@ described in <a href="#auditing" class="auto internal xref">Section 11.2</a>.<a 
             </ol>
 </li>
           <li id="section-10.1-7.5">
-            <p id="section-10.1-7.5.1">Verify that the commitment in the terminal search step opens to
-<code>SearchResponse.value</code> with opening <code>SearchResponse.opening</code>.<a href="#section-10.1-7.5.1" class="pilcrow">¶</a></p>
+            <p id="section-10.1-7.5.1">If the user has monitoring information for this search key (because they own
+it or are performing Contact Monitoring), verify that <code>SearchProof.position</code>
+is the same as in previous requests, and that the entry's version and
+position in the log are consistent with other known versions.<a href="#section-10.1-7.5.1" class="pilcrow">¶</a></p>
 </li>
         </ol>
 <p id="section-10.1-8">Depending on the deployment mode of the Transparency Log, the <code>value</code> field may
@@ -2572,24 +2572,7 @@ proof.<a href="#section-10.3-12.3.1" class="pilcrow">¶</a></p>
 </li>
           <li id="section-10.3-12.4">
             <p id="section-10.3-12.4.1">Verify that all of the candidate root values are the same. With the candidate
-root value:<a href="#section-10.3-12.4.1" class="pilcrow">¶</a></p>
-<ol start="1" type="1" class="normal type-1" id="section-10.3-12.4.2">
-<li id="section-10.3-12.4.2.1">
-                <p id="section-10.3-12.4.2.1.1">Verify the proof in <code>FullTreeHead.consistency</code>, if one is expected.<a href="#section-10.3-12.4.2.1.1" class="pilcrow">¶</a></p>
-</li>
-              <li id="section-10.3-12.4.2.2">
-                <p id="section-10.3-12.4.2.2.1">Verify the signature in <code>TreeHead.signature</code>.<a href="#section-10.3-12.4.2.2.1" class="pilcrow">¶</a></p>
-</li>
-              <li id="section-10.3-12.4.2.3">
-                <p id="section-10.3-12.4.2.3.1">Verify that the timestamp in <code>TreeHead</code> is sufficiently recent.
-Additionally, verify that the <code>timestamp</code> and <code>tree_size</code> fields of the
-<code>TreeHead</code> are greater than or equal to what they were before.<a href="#section-10.3-12.4.2.3.1" class="pilcrow">¶</a></p>
-</li>
-              <li id="section-10.3-12.4.2.4">
-                <p id="section-10.3-12.4.2.4.1">If third-party auditing is used, verify <code>auditor_tree_head</code> with the steps
-described in <a href="#auditing" class="auto internal xref">Section 11.2</a>.<a href="#section-10.3-12.4.2.4.1" class="pilcrow">¶</a></p>
-</li>
-            </ol>
+root value, verify <code>FullTreeHead</code> as in <a href="#search" class="auto internal xref">Section 10.1</a>.<a href="#section-10.3-12.4.1" class="pilcrow">¶</a></p>
 </li>
         </ol>
 <p id="section-10.3-13">Some information is omitted from MonitorResponse in the interest of efficiency,
