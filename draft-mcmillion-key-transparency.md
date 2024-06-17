@@ -755,7 +755,7 @@ represented as:
 ~~~ tls-presentation
 struct {
   uint64 tree_size;
-  uint64 timestamp;
+  int64 timestamp;
   opaque signature<0..2^16-1>;
 } TreeHead;
 ~~~
@@ -796,7 +796,7 @@ struct {
 struct {
   Configuration config;
   uint64 tree_size;
-  uint64 timestamp;
+  int64 timestamp;
   opaque root_value<Hash.Nh>;
 } TreeHeadTBS;
 ~~~
@@ -1175,46 +1175,6 @@ search key is not provided, or each key's initial position in the log, given
 that both of these can be cached from the original Search or Update query for
 the key.
 
-## Distinguished
-
-Users can request distinguished tree heads by submitting a DistinguishedRequest
-to the Transparency Log containing the approximate timestamp of the tree head
-they'd like to receive.
-
-~~~ tls-presentation
-struct {
-  uint64 timestamp;
-  optional<uint64> last;
-} DistinguishedRequest;
-~~~
-
-In turn, the Transparency Log responds with a DistinguishedResponse structure
-containing the `FullTreeHead` with the timestamp closest to what the user
-requested and the root hash of the tree at this point.
-
-~~~ tls-presentation
-struct {
-  FullTreeHead full_tree_head;
-  opaque root<Hash.Nh>;
-} DistinguishedResponse;
-~~~
-
-If `last` is present, then the Transparency Log MUST provide a consistency proof
-between the provided tree head and the tree when it had `last` entries, in the
-`consistency` field of `FullTreeHead`. Unlike the other operations described in
-this section, where `last` is always less than or equal to the `tree_size` in
-the provided FullTreeHead, a DistinguishedResponse may contain a FullTreeHead
-which comes either before or after `last`.
-
-Users verify a response by following these steps:
-
-1. Verify the proof in `FullTreeHead.consistency`, if one is expected.
-2. Verify the signature in `TreeHead.signature`.
-3. Verify that the `timestamp` and `tree_size` fields of the `TreeHead` are
-   consistent with the previously held `TreeHead`.
-4. If third-party auditing is used, verify `auditor_tree_head` with the steps
-   described in {{auditing}}.
-
 
 # Third Parties
 
@@ -1435,22 +1395,19 @@ presented, but isn't in itself sufficient for detection. To detect forks, users
 must either use **out-of-band communication** with other users or **anonymous
 communication** with the Transparency Log.
 
-With out-of-band communication, a user obtains a "distinguished" `TreeHead` that
-was issued closest to a given time, like the start of the day, by sending a
-`Distinguished` request to the Transparency Log. The user then sends the
-`TreeHead` along with the root hash that it verifies against to other users over
-some out-of-band communication channel (for example, an in-app screen with a QR
-code / scanner). The other users check that the `TreeHead` verifies successfully
-and matches their own view of the log. If the `TreeHead` verifies successfully
-on its own but doesn't match a user's view of the log, this proves the existence
-of a fork.
+With out-of-band communication, a user obtains a "distinguished" `TreeHead`, for
+example by looking up a well-known key. The user then sends the root hash of the
+`TreeHead` to other users over some out-of-band communication channel (for
+example, an in-app screen with a QR code / scanner). The other users check that
+the root hash matches their own view of the log. If the `TreeHead` verifies
+successfully on its own but doesn't match a user's view of the log, this proves
+the existence of a fork.
 
-With anonymous communication, a user first obtains a "distinguished" `TreeHead`
-by sending a `Distinguished` request to the Transparency Log over their normal
-communication channel. They then send the same `Distinguished` request, omitting
-any identifying information and leaving the `last` field empty, over an
-anonymous channel. If the log responds with a different `TreeHead` over the
-anonymous channel, this proves the existence of a fork.
+With anonymous communication, a user first obtains a "distinguished" `TreeHead`.
+They then send the same request, omitting any identifying information and
+leaving the `last` field empty, over an anonymous channel. If the log responds
+with a different `TreeHead` over the anonymous channel, this proves the
+existence of a fork.
 
 In the event that a fork is successfully detected, the two signatures on the
 differing views of the log provide non-repudiable proof of log misbehavior which
