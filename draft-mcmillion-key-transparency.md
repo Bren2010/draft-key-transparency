@@ -1023,10 +1023,8 @@ Users verify a search response by following these steps:
    {{proof-combined-tree}}. This will produce a verdict as to whether the search
    was executed correctly, and also a candidate root value for the tree. If it's
    determined that the search was executed incorrectly, abort with an error.
-3. If the user has monitoring information for this search key (because they own
-   it or are performing Contact Monitoring), verify that `SearchProof.position`
-   is the same as in previous requests, and that the entry's version and
-   position in the log are consistent with other known versions.
+3. Verify that the commitment in the terminal search step opens to
+   `SearchResponse.value` with opening `SearchResponse.opening`.
 4. With the candidate root value for the tree:
    1. Verify the proof in `FullTreeHead.consistency`, if one is expected.
    2. Verify the signature in `TreeHead.signature`.
@@ -1035,8 +1033,10 @@ Users verify a search response by following these steps:
       `TreeHead` are greater than or equal to what they were before.
    4. If third-party auditing is used, verify `auditor_tree_head` with the steps
       described in {{auditing}}.
-5. Verify that the commitment in the terminal search step opens to
-   `SearchResponse.value` with opening `SearchResponse.opening`.
+5. If the user has monitoring information for this search key (because they own
+   it or are performing Contact Monitoring), verify that `SearchProof.position`
+   is the same as in previous requests, and that the entry's version and
+   position in the log are consistent with other known versions.
 
 Depending on the deployment mode of the Transparency Log, the `value` field may
 or may not require additional verification, specified in {{update-format}},
@@ -1169,14 +1169,7 @@ Users verify a MonitorResponse by following these steps:
    `PrefixProof` and commitment of `ProofStep`, with the provided inclusion
    proof.
 4. Verify that all of the candidate root values are the same. With the candidate
-   root value:
-   1. Verify the proof in `FullTreeHead.consistency`, if one is expected.
-   2. Verify the signature in `TreeHead.signature`.
-   3. Verify that the timestamp in `TreeHead` is sufficiently recent.
-      Additionally, verify that the `timestamp` and `tree_size` fields of the
-      `TreeHead` are greater than or equal to what they were before.
-   4. If third-party auditing is used, verify `auditor_tree_head` with the steps
-      described in {{auditing}}.
+   root value, verify `FullTreeHead` as in {{Search}}.
 
 Some information is omitted from MonitorResponse in the interest of efficiency,
 due to the fact that the user would have already seen and verified it as part of
