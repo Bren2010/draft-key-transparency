@@ -1169,7 +1169,7 @@ Users verify a MonitorResponse by following these steps:
    `PrefixProof` and commitment of `ProofStep`, with the provided inclusion
    proof.
 4. Verify that all of the candidate root values are the same. With the candidate
-   root value, verify `FullTreeHead` as in {{Search}}.
+   root value, verify `FullTreeHead` as in {{search}}.
 
 Some information is omitted from MonitorResponse in the interest of efficiency,
 due to the fact that the user would have already seen and verified it as part of
