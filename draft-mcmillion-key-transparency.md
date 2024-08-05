@@ -1241,9 +1241,8 @@ that they were added to the log tree:
 enum {
   reserved(0),
   newTree(1),
-  emptyTree(2),
-  differentKey(3),
-  sameKey(4),
+  differentKey(2),
+  sameKey(3),
   (255)
 } AuditorProofType;
 
@@ -1251,8 +1250,6 @@ struct {
   AuditorProofType proof_type;
   select (AuditorProof.proof_type) {
     case newTree:
-    case emptyTree:
-      opaque old_seed<16>;
     case differentKey:
       NodeValue copath<0..2^8-1>;
       opaque old_seed<16>;
@@ -1299,9 +1296,6 @@ The `AuditorProof` structure represents the result of searching for
 whether the search results in:
 
 - `newTree`: no search was done because this is the first modification to the tree.
-- `emptyTree`: no search was done because there are no populated leaf nodes in
-  the prefix tree, though there's a stand-in value for the root which can be
-  computed with `old_seed`.
 - `differentKey`: the search terminates at a stand-in value in the copath of
   another key. The copath for `AuditorUpdate.index`, up to and including the
   first bit difference between the two keys, is given in `copath`. The seed for
@@ -1317,8 +1311,8 @@ An auditor processes a single `AuditorUpdate` by following these steps:
    current prefix tree root.
 2. Use the information in the proof, along with `AuditorUpdate.seed`, to
    determine the new prefix tree root. The auditor MUST return an error and
-   refuse to continue if the `proof_type` field is `sameKey` but the
-   `update_type` is `fake`.
+   refuse to continue if the `proof_type` field is `newTree` or `sameKey` but
+   the `update_type` is `fake`.
 3. Combine the new prefix tree root with the provided `commitment` to produce
    the leaf hash value.
 4. Combine the leaf hash value with the current log root to produce the new log
