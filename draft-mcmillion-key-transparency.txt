@@ -3,9 +3,9 @@
 
 
 KT Working Group                                            B. McMillion
-Internet-Draft                                              17 June 2024
+Internet-Draft                                             5 August 2024
 Intended status: Informational                                          
-Expires: 19 December 2024
+Expires: 6 February 2025
 
 
                             Key Transparency
@@ -47,7 +47,7 @@ Status of This Memo
    time.  It is inappropriate to use Internet-Drafts as reference
    material or to cite them other than as "work in progress."
 
-   This Internet-Draft will expire on 19 December 2024.
+   This Internet-Draft will expire on 6 February 2025.
 
 Copyright Notice
 
@@ -1351,9 +1351,8 @@ Table of Contents
    enum {
      reserved(0),
      newTree(1),
-     emptyTree(2),
-     differentKey(3),
-     sameKey(4),
+     differentKey(2),
+     sameKey(3),
      (255)
    } AuditorProofType;
 
@@ -1361,8 +1360,6 @@ Table of Contents
      AuditorProofType proof_type;
      select (AuditorProof.proof_type) {
        case newTree:
-       case emptyTree:
-         opaque old_seed<16>;
        case differentKey:
          NodeValue copath<0..2^8-1>;
          opaque old_seed<16>;
@@ -1411,10 +1408,6 @@ Table of Contents
    *  newTree: no search was done because this is the first modification
       to the tree.
 
-   *  emptyTree: no search was done because there are no populated leaf
-      nodes in the prefix tree, though there's a stand-in value for the
-      root which can be computed with old_seed.
-
    *  differentKey: the search terminates at a stand-in value in the
       copath of another key.  The copath for AuditorUpdate.index, up to
       and including the first bit difference between the two keys, is
@@ -1434,7 +1427,7 @@ Table of Contents
    2.  Use the information in the proof, along with AuditorUpdate.seed,
        to determine the new prefix tree root.  The auditor MUST return
        an error and refuse to continue if the proof_type field is
-       sameKey but the update_type is fake.
+       newTree or sameKey but the update_type is fake.
 
    3.  Combine the new prefix tree root with the provided commitment to
        produce the leaf hash value.
